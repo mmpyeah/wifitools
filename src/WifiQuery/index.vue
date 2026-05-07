@@ -1,9 +1,13 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted } from 'vue'
 
-defineProps({
+const props = defineProps({
   enterAction: {
     type: Object,
+    required: true
+  },
+  navigateTo: {
+    type: Function,
     required: true
   }
 })
@@ -49,9 +53,14 @@ function copyPassword(item: WifiItem) {
   if (!item.password) return
   window.utools.copyText(item.password)
   copiedSsid.value = item.ssid
-  setTimeout(() => {
-    copiedSsid.value = ''
-  }, 1500)
+  setTimeout(() => { copiedSsid.value = '' }, 1500)
+}
+
+function showQrcode(item: WifiItem) {
+  props.navigateTo('wifi-qrcode', {
+    ssid: item.ssid,
+    password: item.password || ''
+  })
 }
 </script>
 
@@ -112,6 +121,12 @@ function copyPassword(item: WifiItem) {
             >
               {{ copiedSsid === item.ssid ? '已复制' : '复制' }}
             </button>
+            <button
+              class="wifi-query__btn wifi-query__btn--qr"
+              @click="showQrcode(item)"
+            >
+              二维码
+            </button>
           </div>
         </div>
         <div class="wifi-query__password">
@@ -143,7 +158,6 @@ function copyPassword(item: WifiItem) {
   font-size: 14px;
 }
 
-/* 搜索框 */
 .wifi-query__search {
   display: flex;
   align-items: center;
@@ -171,7 +185,6 @@ function copyPassword(item: WifiItem) {
   opacity: 0.4;
 }
 
-/* 状态提示 */
 .wifi-query__status {
   flex: 1;
   display: flex;
@@ -190,7 +203,6 @@ function copyPassword(item: WifiItem) {
   text-align: center;
 }
 
-/* 列表 */
 .wifi-query__list {
   flex: 1;
   overflow-y: auto;
@@ -240,7 +252,6 @@ function copyPassword(item: WifiItem) {
   flex-shrink: 0;
 }
 
-/* 密码行 */
 .wifi-query__password {
   margin-top: 4px;
   padding-left: 22px;
@@ -261,7 +272,6 @@ function copyPassword(item: WifiItem) {
   opacity: 0.5;
 }
 
-/* 按钮 */
 .wifi-query__btn {
   padding: 2px 10px;
   font-size: 12px;
@@ -284,11 +294,16 @@ function copyPassword(item: WifiItem) {
   background: #48bb78;
 }
 
+.wifi-query__btn--qr {
+  background: transparent;
+  color: var(--blue);
+  border: 1px solid var(--blue);
+}
+
 .wifi-query__btn:active {
   opacity: 0.7;
 }
 
-/* 底部统计 */
 .wifi-query__footer {
   padding: 8px 16px;
   font-size: 12px;
@@ -298,7 +313,6 @@ function copyPassword(item: WifiItem) {
   flex-shrink: 0;
 }
 
-/* 深色模式 */
 @media (prefers-color-scheme: dark) {
   .wifi-query__item:hover {
     background: rgba(255, 255, 255, 0.05);

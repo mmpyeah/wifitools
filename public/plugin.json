@@ -16,6 +16,14 @@
       ]
     },
     {
+      "code": "wifi-qrcode",
+      "explain": "生成 WiFi 二维码，供手机扫码连接",
+      "cmds": [
+        "WiFi二维码",
+        "wifi二维码"
+      ]
+    },
+    {
       "code": "hello",
       "explain": "这是插件应用的第一个功能",
       "cmds": [

@@ -4,17 +4,27 @@ import Hello from './Hello/index.vue'
 import Read from './Read/index.vue'
 import Write from './Write/index.vue'
 import WifiQuery from './WifiQuery/index.vue'
+import WifiQrcode from './WifiQrcode/index.vue'
 
 const route = ref('')
 const enterAction = ref({})
+// 页面间传参：wifi-query 点击二维码按钮时写入，WifiQrcode 读取
+const routeParams = ref<Record<string, string>>({})
+
+function navigateTo(name: string, params: Record<string, string> = {}) {
+  routeParams.value = params
+  route.value = name
+}
 
 onMounted(() => {
   window.utools.onPluginEnter((action) => {
+    routeParams.value = {}
     route.value = action.code
     enterAction.value = action
   })
-  window.utools.onPluginOut((isKill) => {
+  window.utools.onPluginOut(() => {
     route.value = ''
+    routeParams.value = {}
   })
 })
 </script>
@@ -30,6 +40,9 @@ onMounted(() => {
     <Write :enterAction="enterAction"></Write>
   </template>
   <template v-if="route === 'wifi-query'">
-    <WifiQuery :enterAction="enterAction"></WifiQuery>
+    <WifiQuery :enterAction="enterAction" :navigateTo="navigateTo"></WifiQuery>
+  </template>
+  <template v-if="route === 'wifi-qrcode'">
+    <WifiQrcode :params="routeParams" :navigateTo="navigateTo"></WifiQrcode>
   </template>
 </template>
