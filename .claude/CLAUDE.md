@@ -5,6 +5,8 @@
 基于 **uTools** 平台的 WiFi 助手插件，使用 Vue 3 + Vite 构建。
 核心目标：在 uTools 中快速查询 WiFi 密码、展示 WiFi 二维码、管理已保存的 WiFi 信息。
 
+**项目路径：** `D:\WebstormProjects\wifitools`
+
 ---
 
 ## 技术栈
@@ -15,7 +17,7 @@
 | 构建 | Vite 6 |
 | 平台 | uTools（`window.utools` API） |
 | 系统能力 | Node.js（通过 `preload/services.js` 注入 `window.services`） |
-| 二维码 | qrcode.vue（渲染为 canvas，支持 Vue 3） |
+| 二维码 | qrcode.vue（`QrcodeCanvas` 具名导入，渲染为 canvas） |
 | 样式 | 原生 CSS，支持深色模式（`prefers-color-scheme`） |
 
 ---
@@ -23,7 +25,7 @@
 ## 目录结构
 
 ```
-WiFi助手/
+wifitools/
 ├── public/
 │   ├── plugin.json          # uTools 插件配置（功能指令、入口）
 │   ├── logo.png
@@ -37,7 +39,7 @@ WiFi助手/
 │   ├── Hello/index.vue
 │   ├── Read/index.vue
 │   ├── Write/index.vue
-│   ├── WifiQuery/index.vue  # WiFi 密码列表
+│   ├── WifiQuery/index.vue  # WiFi 密码列表（首页）
 │   └── WifiQrcode/index.vue # WiFi 二维码展示
 ├── .claude/
 │   └── CLAUDE.md            # 本文件
@@ -96,6 +98,7 @@ WIFI:T:<加密类型>;S:<SSID>;P:<密码>;;
 - 加密类型：`WPA`（兼容 WPA/WPA2/WPA3）、`WEP`、`nopass`
 - 特殊字符 `\ ; , " :` 需用反斜杠转义
 - 末尾双分号 `;;` 必须保留
+- import 使用具名导出：`import { QrcodeCanvas } from 'qrcode.vue'`，不用默认导出（避免 ref hoisting warning）
 
 ---
 
