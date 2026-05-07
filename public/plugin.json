@@ -7,6 +7,15 @@
   },
   "features": [
     {
+      "code": "wifi-query",
+      "explain": "查询本机已保存的 WiFi 密码",
+      "cmds": [
+        "WiFi密码",
+        "wifi密码",
+        "查询WiFi"
+      ]
+    },
+    {
       "code": "hello",
       "explain": "这是插件应用的第一个功能",
       "cmds": [

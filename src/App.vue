@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue';
 import Hello from './Hello/index.vue'
 import Read from './Read/index.vue'
 import Write from './Write/index.vue'
+import WifiQuery from './WifiQuery/index.vue'
 
 const route = ref('')
 const enterAction = ref({})
@@ -27,5 +28,8 @@ onMounted(() => {
   </template>
   <template v-if="route === 'write'">
     <Write :enterAction="enterAction"></Write>
+  </template>
+  <template v-if="route === 'wifi-query'">
+    <WifiQuery :enterAction="enterAction"></WifiQuery>
   </template>
 </template>

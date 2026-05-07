@@ -9,7 +9,7 @@ defineProps({
 
 <template>
   <div class="hello">
-    <h1>Hell22dddd2222o</h1>
+    <h1>1</h1>
     <h2>插件应用进入参数</h2>
     <pre>
         {{ JSON.stringify(enterAction, undefined, 2) }}

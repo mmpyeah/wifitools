@@ -74,10 +74,19 @@ window.services = {
   readFile(file) { ... },
   writeTextFile(text) { ... },
   writeImageFile(base64Url) { ... },
-
-  // 新增 WiFi 相关能力在此处追加
-  getWifiPassword(ssid) { ... },
   listSavedWifi() { ... },
+  getWifiPassword(ssid) { ... },
+}
+```
+
+### 编码注意事项（Windows）
+
+Windows `netsh` 命令输出默认 GBK 编码，Node.js 的 `TextDecoder('gbk')` 在 Electron 环境不可靠。
+统一使用 `chcp 65001` 前缀强制 UTF-8 输出：
+
+```js
+function execUTF8(cmd) {
+  return execSync(`chcp 65001 >nul && ${cmd}`, { encoding: 'utf8' })
 }
 ```
 
@@ -100,17 +109,24 @@ window.services = {
 - `code` 字段与组件目录名保持一致（全小写）
 - 新增功能必须填写 `explain` 字段
 - 涉及文件匹配的功能使用标准 `cmds` 对象格式
+- `features` 第一项为默认进入功能
 
 ### preload/services.js
-- 只写同步方法（`sync` 版本的 fs API），保持调用简洁
-- 错误不在 services 内捕获，由调用方（Vue 组件）负责 try/catch
+- 只写同步方法（`sync` 版本的 fs/child_process API），保持调用简洁
+- 错误不在 services 内捕获，由调用方（Vue 组件）负责 try/catch（getWifiPassword 除外，失败返回 null）
 - 文件路径相关操作统一使用 `path.join`
+- Windows 命令行调用统一使用 `execUTF8()` 封装，避免中文乱码
+
+### 调试方式
+- Vue 源码（`src/`）修改：Vite 热更新自动生效
+- `preload/services.js` 修改：必须在 uTools 开发者工具中点击「重新加载」才生效
+- 打开控制台：插件触发后 `Ctrl+D` 弹出独立窗口，再按 `F12`
 
 ### 命名
-- 组件目录/文件：大写开头（`Hello/`、`Read/`）
-- CSS 类名：kebab-case（`.wifi-card`）
+- 组件目录/文件：大写开头（`Hello/`、`WifiQuery/`）
+- CSS 类名：kebab-case（`.wifi-query__item`）
 - JS 变量/函数：camelCase
-- plugin.json 的 code：全小写（`wifi-qrcode`）
+- plugin.json 的 code：全小写加连字符（`wifi-query`）
 
 ---
 
@@ -131,8 +147,8 @@ uTools 开发模式：`plugin.json` 中 `development.main` 指向 `http://localh
 
 ---
 
-## 待开发功能
+## 功能列表
 
-- [ ] `wifi-query` — 查询系统已保存的 WiFi 密码（调用系统命令）
+- [x] `wifi-query` — 查询系统已保存的 WiFi 密码（调用 netsh 命令）
 - [ ] `wifi-qrcode` — 根据 SSID/密码生成二维码，供手机扫码连接
 - [ ] `wifi-list` — 列出当前环境可用 WiFi 列表及信号强度
