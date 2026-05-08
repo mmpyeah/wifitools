@@ -84,6 +84,13 @@ function showQrcode(item: SavedWifi) {
   })
 }
 
+function showCard(item: SavedWifi) {
+  props.navigateTo('wifi-card', {
+    ssid: item.ssid,
+    password: item.password || ''
+  })
+}
+
 function confirmDelete(item: SavedWifi) {
   deletingSSID.value = item.ssid
   deleteError.value = ''
@@ -284,6 +291,7 @@ function signalClass(signal: number): string {
                 @click="copyPassword(item)"
               >{{ copiedSsid === item.ssid ? '已复制' : '复制' }}</button>
               <button class="wifi-query__btn wifi-query__btn--ghost" @click="showQrcode(item)">二维码</button>
+              <button class="wifi-query__btn wifi-query__btn--ghost" @click="showCard(item)">卡片</button>
               <button class="wifi-query__btn wifi-query__btn--danger" @click="confirmDelete(item)">删除</button>
             </div>
           </div>

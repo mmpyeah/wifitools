@@ -158,7 +158,7 @@ npm run build  # 构建生产包
 
 ### 待开发（优先）
 - [x] `wifi-forget` — 删除已保存的 WiFi，已保存列表内各行加删除按钮 + 内联确认
-- [ ] `wifi-card` — WiFi 分享卡片，SSID + 密码 + 二维码合成图片，可打印/发送
+- [x] `wifi-card` — WiFi 分享卡片，已保存列表点「卡片」跳转，SSID + 密码 + 二维码 canvas 合成图片并保存
 
 ### 待开发（后续）
 - [ ] `wifi-diagnose` — 网络诊断一键修复，自动 ping 网关/DNS/外网，判断断网层级并提供修复命令

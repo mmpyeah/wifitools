@@ -5,6 +5,7 @@ import Read from './Read/index.vue'
 import Write from './Write/index.vue'
 import WifiQuery from './WifiQuery/index.vue'
 import WifiQrcode from './WifiQrcode/index.vue'
+import WifiCard from './WifiCard/index.vue'
 
 const route = ref('')
 const enterAction = ref({})
@@ -44,5 +45,8 @@ onMounted(() => {
   </template>
   <template v-if="route === 'wifi-qrcode'">
     <WifiQrcode :params="routeParams" :navigateTo="navigateTo"></WifiQrcode>
+  </template>
+  <template v-if="route === 'wifi-card'">
+    <WifiCard :params="routeParams" :navigateTo="navigateTo"></WifiCard>
   </template>
 </template>

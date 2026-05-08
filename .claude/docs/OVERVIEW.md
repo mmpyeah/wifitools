@@ -21,6 +21,7 @@ WiFi助手/
 │   ├── App.vue                  # 根组件：路由调度 + 页面传参
 │   ├── WifiQuery/index.vue      # 首页：已保存密码 + 周边热点 + 网络状态（三 Tab）
 │   ├── WifiQrcode/index.vue     # 二维码页
+│   ├── WifiCard/index.vue       # 分享卡片页
 │   ├── Hello/index.vue          # 模板示例（可删）
 │   ├── Read/index.vue           # 模板示例（可删）
 │   └── Write/index.vue          # 模板示例（可删）
@@ -51,8 +52,8 @@ WiFi助手/
 └──┬───────────┬──────────────────────────────┘
    │           │
    ▼           ▼
-WifiQuery   WifiQrcode   ...其他功能页
-(首页)      (二维码页)
+WifiQuery   WifiQrcode   WifiCard   ...其他功能页
+(首页)      (二维码页)   (卡片页)
    │
    ├── Tab: 已保存密码
    ├── Tab: 周边热点
@@ -106,6 +107,7 @@ function navigateTo(name: string, params: Record<string, string> = {}) {
 | `getWifiPassword(ssid)` | 获取指定 SSID 的密码，无则返回 null |
 | `getCurrentWifi()` | 获取当前连接的 SSID，未连接返回 null |
 | `getWifiStatus()` | 获取当前连接详情，返回 `{ ssid, signal, channel, rxRate, txRate, auth, adapter, adapterName, mac, ipv4, ipv6 }` 或 null |
+| `deleteWifiProfile(ssid)` | 删除已保存的 WiFi 配置文件，成功返回 true |
 | `scanWifiNetworks(savedSsids)` | 扫描周边热点，返回按信号排序的列表 |
 
 **编码方案：**
@@ -124,6 +126,7 @@ function execUTF8(cmd) {
 |------|--------|----------|------|
 | `wifi-query` | WiFi密码 / 查询WiFi | `WifiQuery` | 首页，三 Tab（已保存 + 周边热点 + 网络状态），已保存 Tab 支持删除 |
 | `wifi-qrcode` | WiFi二维码 | `WifiQrcode` | 从 wifi-query 跳转或独立触发 |
+| `wifi-card` | WiFi卡片 / WiFi分享 | `WifiCard` | 从 wifi-query 跳转或独立触发，canvas 合成卡片图片 |
 | `wifi-list` | — | `WifiQuery` 周边热点 Tab | 内嵌在首页，无独立入口 |
 
 ---
@@ -135,8 +138,8 @@ function execUTF8(cmd) {
 | code | 说明 | 实现思路 |
 |------|------|----------|
 | ~~`wifi-status`~~ | ✅ 已完成，内嵌在 WifiQuery 第三 Tab | — |
-| `wifi-forget` | 删除已保存的 WiFi | 已保存列表各行加删除按钮，内联确认条，`netsh wlan delete profile name="xxx"` |
-| `wifi-card` | WiFi 分享卡片 | SSID+密码+二维码 canvas 合成图片，复用 `writeImageFile` |
+| ~~`wifi-forget`~~ | ✅ 已完成，已保存列表各行加删除按钮 + 内联确认 | — |
+| ~~`wifi-card`~~   | ✅ 已完成，canvas 合成卡片，保存图片到下载目录 | — |
 
 ### 后续
 
@@ -150,7 +153,7 @@ function execUTF8(cmd) {
 ```
 Tab 1：已保存
   - onMounted 同步加载全部 SSID + 密码
-  - 搜索过滤 / 显示隐藏 / 复制密码 / 跳转二维码
+  - 搜索过滤 / 显示隐藏 / 复制密码 / 跳转二维码 / 跳转分享卡片
   - 删除：点「删除」按钮内联展开确认条，确认后调用 `deleteWifiProfile(ssid)` 并从列表移除
 
 Tab 2：周边热点
@@ -166,6 +169,16 @@ Tab 3：网络状态
   - IP 通过 adapterName 精确定位 ipconfig 对应适配器块（避免多 WLAN 适配器误匹配）
   - 未连接时展示空状态提示
   - 底部「刷新」按钮
+```
+
+### WifiCard 分享卡片页
+
+```
+- 从 routeParams 接收 { ssid, password }
+- 离屏 QrcodeCanvas（fixed 定位 left:-9999px）渲染二维码，onMounted + watch 触发重绘
+- setTimeout 120ms 等待 QrcodeCanvas 渲染后 drawCard()
+- canvas 合成：白底圆角卡 + 顶部蓝色装饰条 + 左侧文字（名称/密码/加密）+ 右侧二维码
+- 保存图片：canvas.toDataURL → writeImageFile → shellShowItemInFolder
 ```
 
 ### WifiQrcode 二维码页
