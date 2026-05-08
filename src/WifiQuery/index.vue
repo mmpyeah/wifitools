@@ -141,11 +141,25 @@ const nearbyList = ref<NearbyWifi[]>([])
 const nearbyLoaded = ref(false)
 const currentSsid = ref<string | null>(null)
 
+// 连接相关状态
+const connectingSsid = ref<string | null>(null)  // 正在连接的 SSID
+const connectError = ref('')
+const passwordInput = ref('')  // 密码输入
+const showPasswordModal = ref(false)  // 是否显示密码输入弹窗
+const targetWifi = ref<NearbyWifi | null>(null)  // 目标 WiFi（用于密码输入弹窗）
+
 const filteredNearby = computed(() => {
   const kw = keyword.value.trim().toLowerCase()
   if (!kw) return nearbyList.value
   return nearbyList.value.filter(i => i.ssid.toLowerCase().includes(kw))
 })
+
+// 判断是否为开放网络
+function isOpenNetwork(auth: string): boolean {
+  if (!auth) return true
+  const lower = auth.toLowerCase()
+  return lower.includes('open') || lower.includes('开放') || lower.includes('nopass') || lower === 'none'
+}
 
 function switchTab(tab: 'saved' | 'nearby' | 'status') {
   activeTab.value = tab
@@ -190,6 +204,66 @@ function openWifiSettings() {
 
 function openLocationSettings() {
   window.utools.shellOpenExternal('ms-settings:privacy-location')
+}
+
+// 连接 WiFi
+function handleConnect(item: NearbyWifi) {
+  // 如果是已连接的网络，不处理
+  if (item.ssid === currentSsid.value) return
+
+  // 如果是已保存的网络，直接连接
+  if (item.saved) {
+    doConnect(item.ssid, null)
+    return
+  }
+
+  // 如果是开放网络，直接连接
+  if (isOpenNetwork(item.auth)) {
+    doConnect(item.ssid, null)
+    return
+  }
+
+  // 需要输入密码
+  targetWifi.value = item
+  passwordInput.value = ''
+  connectError.value = ''
+  showPasswordModal.value = true
+}
+
+function doConnect(ssid: string, password: string | null) {
+  connectingSsid.value = ssid
+  connectError.value = ''
+  showPasswordModal.value = false
+
+  try {
+    window.services.connectWifi(ssid, password)
+    // 连接命令发出后，提示用户等待
+    window.utools.showNotification(`正在连接到 "${ssid}"...`)
+    // 关闭弹窗
+    targetWifi.value = null
+    passwordInput.value = ''
+  } catch (err: any) {
+    connectError.value = err.message || '连接失败'
+    showPasswordModal.value = true
+    targetWifi.value = nearbyList.value.find(i => i.ssid === ssid) || null
+  } finally {
+    // 延迟清除连接状态，让用户看到反馈
+    setTimeout(() => {
+      connectingSsid.value = null
+    }, 2000)
+  }
+}
+
+function cancelConnect() {
+  showPasswordModal.value = false
+  targetWifi.value = null
+  passwordInput.value = ''
+  connectError.value = ''
+}
+
+function submitPassword() {
+  if (!targetWifi.value || !passwordInput.value) return
+  doConnect(targetWifi.value.ssid, passwordInput.value)
 }
 
 // ─── 网络状态 Tab ────────────────────────────────────────
@@ -403,6 +477,14 @@ function signalClass(signal: number): string {
             </div>
             <div class="wifi-query__nearby-meta">
               <span class="wifi-query__signal-pct">{{ item.signal }}%</span>
+              <button
+                v-if="item.ssid !== currentSsid"
+                class="wifi-query__btn"
+                :class="{ 'wifi-query__btn--connecting': connectingSsid === item.ssid }"
+                @click="handleConnect(item)"
+              >
+                {{ connectingSsid === item.ssid ? '连接中...' : '连接' }}
+              </button>
             </div>
           </div>
           <div class="wifi-query__nearby-info">
@@ -412,6 +494,44 @@ function signalClass(signal: number): string {
           </div>
         </li>
       </ul>
+      <!-- 密码输入弹窗 -->
+      <Teleport to="body">
+        <div v-if="showPasswordModal" class="wifi-query__modal-overlay" @click.self="cancelConnect">
+          <div class="wifi-query__modal">
+            <div class="wifi-query__modal-header">
+              <span>连接到 WiFi</span>
+              <button class="wifi-query__modal-close" @click="cancelConnect">&times;</button>
+            </div>
+            <div class="wifi-query__modal-body">
+              <div class="wifi-query__modal-ssid">
+                <span class="wifi-query__modal-icon">📶</span>
+                <span>{{ targetWifi?.ssid }}</span>
+              </div>
+              <div class="wifi-query__modal-field">
+                <label>密码</label>
+                <div class="wifi-query__modal-input-wrap">
+                  <input
+                    v-model="passwordInput"
+                    type="password"
+                    class="wifi-query__modal-input"
+                    placeholder="请输入 WiFi 密码"
+                    @keyup.enter="submitPassword"
+                  />
+                </div>
+              </div>
+              <div v-if="connectError" class="wifi-query__modal-error">{{ connectError }}</div>
+            </div>
+            <div class="wifi-query__modal-footer">
+              <button class="wifi-query__btn wifi-query__btn--ghost" @click="cancelConnect">取消</button>
+              <button
+                class="wifi-query__btn"
+                :disabled="!passwordInput"
+                @click="submitPassword"
+              >连接</button>
+            </div>
+          </div>
+        </div>
+      </Teleport>
       <div v-if="!nearbyLoading" class="wifi-query__footer">
         <template v-if="nearbyLoaded">
           共发现 {{ nearbyList.length }} 个热点
@@ -917,6 +1037,122 @@ function signalClass(signal: number): string {
   }
   .wifi-query__context-divider {
     background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* 密码输入弹窗 */
+.wifi-query__modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+.wifi-query__modal {
+  background: #fff;
+  border-radius: 12px;
+  width: 300px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+.wifi-query__modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  font-weight: 600;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+}
+.wifi-query__modal-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #999;
+  padding: 0;
+  line-height: 1;
+}
+.wifi-query__modal-close:hover { color: #333; }
+.wifi-query__modal-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.wifi-query__modal-ssid {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.wifi-query__modal-icon { font-size: 16px; }
+.wifi-query__modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.wifi-query__modal-field label {
+  font-size: 12px;
+  color: #666;
+}
+.wifi-query__modal-input-wrap {
+  position: relative;
+}
+.wifi-query__modal-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+}
+.wifi-query__modal-input:focus {
+  border-color: var(--blue);
+}
+.wifi-query__modal-error {
+  font-size: 12px;
+  color: #f56565;
+}
+.wifi-query__modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(128, 128, 128, 0.15);
+}
+.wifi-query__btn--connecting {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+@media (prefers-color-scheme: dark) {
+  .wifi-query__modal {
+    background: #2d2d2d;
+    color: #e0e0e0;
+  }
+  .wifi-query__modal-header {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  .wifi-query__modal-close:hover { color: #fff; }
+  .wifi-query__modal-body {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  .wifi-query__modal-field label { color: #999; }
+  .wifi-query__modal-input {
+    background: #3d3d3d;
+    border-color: rgba(255, 255, 255, 0.15);
+    color: #e0e0e0;
+  }
+  .wifi-query__modal-footer {
+    border-color: rgba(255, 255, 255, 0.1);
   }
 }
 </style>

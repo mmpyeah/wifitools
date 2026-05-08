@@ -218,5 +218,79 @@ window.services = {
       }
     }
     return deduped
+  },
+
+  // 连接 WiFi
+  // 若 ssid 已保存，直接连接；否则需要传入 password 创建临时配置后连接
+  // 返回连接结果描述，失败抛出错误
+  connectWifi (ssid, password) {
+    // 先尝试直接连接（已保存的网络）
+    try {
+      execUTF8(`netsh wlan connect name="${ssid}"`)
+      return `正在连接到 "${ssid}"...`
+    } catch {
+      // 直接连接失败，可能未保存，需要添加配置
+      if (!password) {
+        const err = new Error(`"${ssid}" 未保存，请提供密码`)
+        err.code = 'PASSWORD_REQUIRED'
+        throw err
+      }
+    }
+
+    // 需要添加配置：创建临时 XML 文件
+    const tempDir = process.env.TEMP || process.env.TMP || 'C:\\Windows\\Temp'
+    const tempFile = path.join(tempDir, `wifi_temp_${Date.now()}.xml`)
+
+    // 生成 WiFi 配置文件 XML
+    const authType = password.toLowerCase().includes('wep') ? 'open' : 'WPA2PSK'
+    const encType = password.toLowerCase().includes('wep') ? 'WEP' : 'AES'
+
+    const xmlContent = [
+      '<?xml version="1.0"?>',
+      '<WLANProfile xmlns="http://www.microsoft.com/networking/WLAN/profile/v1">',
+      `    <name>${escapeXml(ssid)}</name>`,
+      '    <SSIDConfig>',
+      '        <SSID>',
+      `            <name>${escapeXml(ssid)}</name>`,
+      '        </SSID>',
+      '    </SSIDConfig>',
+      '    <connectionType>ESS</connectionType>',
+      '    <connectionMode>auto</connectionMode>',
+      '    <MSM>',
+      '        <security>',
+      '            <authEncryption>',
+      `                <authentication>${authType}</authentication>`,
+      `                <encryption>${encType}</encryption>`,
+      '            </authEncryption>',
+      '            <sharedKey>',
+      '                <keyType>passPhrase</keyType>',
+      '                <protected>false</protected>',
+      `                <keyMaterial>${escapeXml(password)}</keyMaterial>`,
+      '            </sharedKey>',
+      '        </security>',
+      '    </MSM>',
+      '</WLANProfile>'
+    ].join('\r\n')
+
+    // 写入临时文件（UTF-8 with BOM for Windows compatibility）
+    fs.writeFileSync(tempFile, '\ufeff' + xmlContent, { encoding: 'utf-8' })
+
+    try {
+      // 添加配置
+      execUTF8(`netsh wlan add profile filename="${tempFile}"`)
+      // 连接
+      execUTF8(`netsh wlan connect name="${ssid}"`)
+      return `正在连接到 "${ssid}"...`
+    } finally {
+      // 删除临时文件
+      try { fs.unlinkSync(tempFile) } catch {}
+    }
   }
+}
+
+// XML 转义
+function escapeXml(str) {
+  return str.replace(/[<>&'"]/g, c => ({
+    '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;'
+  })[c])
 }
