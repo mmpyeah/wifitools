@@ -327,7 +327,12 @@ function signalClass(signal: number): string {
 
     <!-- 搜索框 -->
     <div class="wifi-query__search">
-      <span class="wifi-query__search-icon">🔍</span>
+      <span class="wifi-query__search-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="wifi-query__search-svg">
+          <circle cx="11" cy="11" r="7"/>
+          <path d="m21 21-4.35-4.35"/>
+        </svg>
+      </span>
       <input
         v-model="keyword"
         class="wifi-query__input"
@@ -380,7 +385,14 @@ function signalClass(signal: number): string {
         >
           <div class="wifi-query__item-header">
             <span class="wifi-query__ssid">
-              <span class="wifi-query__icon">📶</span>
+              <span class="wifi-query__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="wifi-query__wifi-svg">
+                  <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+                  <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+                  <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+                  <circle cx="12" cy="20" r="1" fill="currentColor"/>
+                </svg>
+              </span>
               {{ item.ssid }}
             </span>
             <div class="wifi-query__actions">
@@ -395,8 +407,10 @@ function signalClass(signal: number): string {
           </div>
           <div class="wifi-query__password">
             <template v-if="item.password">
-              <span v-if="item.visible">{{ item.password }}</span>
-              <span v-else class="wifi-query__mask">••••••••••</span>
+              <span class="wifi-query__pass-chip">
+                <span v-if="item.visible">{{ item.password }}</span>
+                <span v-else class="wifi-query__mask">••••••••••</span>
+              </span>
               <button class="wifi-query__toggle-visibility" @click.stop="toggleVisible(item)">
                 <svg v-if="item.visible" class="wifi-query__eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -434,10 +448,11 @@ function signalClass(signal: number): string {
         </div>
       </Teleport>
       <div v-if="!savedLoading && !savedError && wifiList.length > 0" class="wifi-query__footer">
-        共 {{ wifiList.length }} 个已保存
-        <template v-if="keyword && filteredSaved.length !== wifiList.length">
-          ，显示 {{ filteredSaved.length }} 个
-        </template>
+        <span>共 {{ wifiList.length }} 个已保存
+          <template v-if="keyword && filteredSaved.length !== wifiList.length">
+            ，显示 {{ filteredSaved.length }} 个
+          </template>
+        </span>
       </div>
     </template>
 
@@ -474,7 +489,9 @@ function signalClass(signal: number): string {
         <li v-for="item in filteredNearby" :key="item.ssid" class="wifi-query__item wifi-query__item--nearby">
           <div class="wifi-query__item-header">
             <div class="wifi-query__ssid">
-              <span class="signal-bars" :class="signalClass(item.signal)">{{ signalIcon(item.signal) }}</span>
+              <span class="signal-bars" :class="signalClass(item.signal)">
+                <span></span><span></span><span></span><span></span>
+              </span>
               <span class="wifi-query__ssid-text">
                 {{ item.ssid }}
                 <span v-if="isCurrentSsid(item.ssid)" class="wifi-query__badge wifi-query__badge--connected">已连接</span>
@@ -510,7 +527,14 @@ function signalClass(signal: number): string {
             </div>
             <div class="wifi-query__modal-body">
               <div class="wifi-query__modal-ssid">
-                <span class="wifi-query__modal-icon">📶</span>
+                <span class="wifi-query__icon wifi-query__modal-wifi-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="wifi-query__wifi-svg">
+                    <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+                    <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+                    <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+                    <circle cx="12" cy="20" r="1" fill="currentColor"/>
+                  </svg>
+                </span>
                 <span>{{ targetWifi?.ssid }}</span>
               </div>
               <div class="wifi-query__modal-field">
@@ -539,14 +563,22 @@ function signalClass(signal: number): string {
         </div>
       </Teleport>
       <div v-if="!nearbyLoading" class="wifi-query__footer">
-        <template v-if="nearbyLoaded">
+        <span v-if="nearbyLoaded">
           共发现 {{ nearbyList.length }} 个热点
           <template v-if="keyword && filteredNearby.length !== nearbyList.length">
             ，显示 {{ filteredNearby.length }} 个
           </template>
-          <span class="wifi-query__footer-sep"> · </span>
-        </template>
-        <button class="wifi-query__refresh" @click="scanNearby">{{ nearbyLoading ? '扫描中...' : '刷新' }}</button>
+        </span>
+        <span v-else></span>
+        <button class="wifi-query__refresh" @click="scanNearby">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="wifi-query__refresh-icon">
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+            <path d="M21 3v5h-5"/>
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+            <path d="M8 16H3v5"/>
+          </svg>
+          {{ nearbyLoading ? '扫描中...' : '刷新' }}
+        </button>
       </div>
     </template>
 
@@ -554,15 +586,25 @@ function signalClass(signal: number): string {
     <template v-if="activeTab === 'status'">
       <div v-if="statusLoading" class="wifi-query__status">正在读取网络状态...</div>
       <div v-else-if="!statusData" class="wifi-query__status">
-        <div style="text-align:center">
-          <div style="font-size:32px;margin-bottom:8px">📵</div>
-          <div>当前未连接 WiFi</div>
+        <div class="wifi-query__empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="wifi-query__empty-icon">
+            <line x1="1" y1="1" x2="23" y2="23"/>
+            <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
+            <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/>
+            <path d="M10.71 5.05A16 16 0 0 1 22.56 9"/>
+            <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/>
+            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+            <circle cx="12" cy="20" r="1" fill="currentColor"/>
+          </svg>
+          <span>当前未连接 WiFi</span>
         </div>
       </div>
       <div v-else class="wifi-status">
         <!-- SSID + 信号 -->
         <div class="wifi-status__header">
-          <span class="signal-bars" :class="signalClass(parseInt(statusData.signal))">{{ signalIcon(parseInt(statusData.signal)) }}</span>
+          <span class="signal-bars" :class="signalClass(parseInt(statusData.signal))">
+            <span></span><span></span><span></span><span></span>
+          </span>
           <span class="wifi-status__ssid">{{ statusData.ssid }}</span>
           <span class="wifi-status__signal">{{ statusData.signal }}%</span>
         </div>
@@ -602,7 +644,16 @@ function signalClass(signal: number): string {
         </div>
       </div>
       <div v-if="!statusLoading" class="wifi-query__footer">
-        <button class="wifi-query__refresh" @click="loadStatus">刷新</button>
+        <span></span>
+        <button class="wifi-query__refresh" @click="loadStatus">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="wifi-query__refresh-icon">
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+            <path d="M21 3v5h-5"/>
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+            <path d="M8 16H3v5"/>
+          </svg>
+          刷新
+        </button>
       </div>
     </template>
 
@@ -616,97 +667,113 @@ function signalClass(signal: number): string {
   height: 100vh;
   box-sizing: border-box;
   font-size: 14px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
-/* 搜索框 */
 .wifi-query__search {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 0.5px solid var(--border);
   flex-shrink: 0;
+  background: var(--bg-primary);
 }
-.wifi-query__search-icon { font-size: 15px; opacity: 0.6; }
+.wifi-query__search-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 13px;
+  opacity: 0.7;
+}
 .wifi-query__input {
   flex: 1;
   border: none;
   background: transparent;
   outline: none;
-  font-size: 14px;
-  color: inherit;
+  font-size: 13px;
+  color: var(--text-primary);
+  font-family: inherit;
 }
-.wifi-query__input::placeholder { opacity: 0.4; }
+.wifi-query__input::placeholder { color: var(--text-tertiary); }
 
-/* Tab */
 .wifi-query__tabs {
   display: flex;
-  border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+  border-bottom: 0.5px solid var(--border);
   flex-shrink: 0;
+  background: var(--bg-primary);
+  padding: 0 4px;
 }
 .wifi-query__tab {
   flex: 1;
-  padding: 8px 0;
+  padding: 9px 0;
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  color: inherit;
-  font-size: 13px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
   cursor: pointer;
-  opacity: 0.5;
-  transition: opacity 0.15s, border-color 0.15s;
+  transition: color var(--transition), border-color var(--transition);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
 }
 .wifi-query__tab--active {
-  opacity: 1;
-  border-bottom-color: var(--blue);
   color: var(--blue);
+  border-bottom-color: var(--blue);
 }
 .wifi-query__tab-count {
-  background: var(--blue);
-  color: #fff;
-  font-size: 11px;
-  padding: 0 5px;
-  border-radius: 8px;
+  background: var(--blue-badge);
+  color: var(--blue);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 10px;
   line-height: 1.6;
 }
 
-/* 状态 */
 .wifi-query__status {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0.5;
+  color: var(--text-tertiary);
+  font-size: 13px;
 }
 .wifi-query__error {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #f56565;
+  color: var(--danger);
   padding: 20px;
   text-align: center;
+  font-size: 13px;
 }
 
-/* 列表 */
 .wifi-query__list {
   flex: 1;
   overflow-y: auto;
   margin: 0;
-  padding: 6px 0;
+  padding: 4px 0;
   list-style: none;
 }
 .wifi-query__item {
-  padding: 9px 16px;
-  border-bottom: 1px solid rgba(128, 128, 128, 0.1);
-  transition: background 0.15s;
+  padding: 10px 14px;
+  border-bottom: 0.5px solid var(--border);
+  transition: background var(--transition);
 }
 .wifi-query__item:last-child { border-bottom: none; }
-.wifi-query__item:hover { background: rgba(128, 128, 128, 0.07); }
+.wifi-query__item:hover { background: var(--bg-secondary); }
 .wifi-query__item-header {
   display: flex;
   align-items: center;
@@ -716,7 +783,7 @@ function signalClass(signal: number): string {
 .wifi-query__ssid {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   font-weight: 500;
   overflow: hidden;
   min-width: 0;
@@ -727,9 +794,42 @@ function signalClass(signal: number): string {
   white-space: nowrap;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-primary);
 }
-.wifi-query__icon { flex-shrink: 0; }
+.wifi-query__icon {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: var(--blue-badge);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--blue);
+}
+.wifi-query__wifi-svg {
+  width: 15px;
+  height: 15px;
+  stroke: var(--blue);
+}
+.wifi-query__search-svg {
+  width: 14px;
+  height: 14px;
+  stroke: var(--text-tertiary);
+}
+.wifi-query__refresh-icon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+.wifi-query__modal-wifi-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+}
 .wifi-query__actions {
   display: flex;
   gap: 6px;
@@ -737,138 +837,90 @@ function signalClass(signal: number): string {
   align-items: center;
 }
 
-/* 已保存密码行 */
 .wifi-query__password {
-  margin-top: 3px;
-  padding-left: 22px;
-  font-size: 13px;
-  opacity: 0.7;
-  font-family: monospace;
-  letter-spacing: 0.5px;
+  margin-top: 6px;
+  padding-left: 36px;
+  font-size: 12px;
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.wifi-query__mask { letter-spacing: 2px; opacity: 0.5; }
-.wifi-query__no-password { font-family: inherit; font-style: italic; opacity: 0.5; }
+.wifi-query__pass-chip {
+  background: var(--bg-secondary);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  color: var(--text-secondary);
+  letter-spacing: 0.4px;
+  font-size: 12px;
+}
+.wifi-query__mask { letter-spacing: 2px; color: var(--text-tertiary); }
+.wifi-query__no-password { font-family: inherit; font-style: italic; color: var(--text-tertiary); font-size: 12px; }
 .wifi-query__toggle-visibility {
   background: none;
   border: none;
   cursor: pointer;
   padding: 2px;
-  color: var(--text-secondary, #666);
-  opacity: 0.6;
-  transition: opacity 0.15s;
+  color: var(--text-tertiary);
+  transition: color var(--transition);
   display: flex;
   align-items: center;
 }
-.wifi-query__toggle-visibility:hover { opacity: 1; }
-.wifi-query__eye-icon { width: 16px; height: 16px; }
+.wifi-query__toggle-visibility:hover { color: var(--text-secondary); }
+.wifi-query__eye-icon { width: 14px; height: 14px; }
 
-/* 周边热点附加信息 */
-.wifi-query__nearby-meta {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.wifi-query__signal-pct {
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  opacity: 0.6;
-  min-width: 34px;
-  text-align: right;
-}
-.wifi-query__nearby-info {
-  margin-top: 3px;
-  padding-left: 30px;
-  font-size: 12px;
-  opacity: 0.45;
-}
-
-/* 信号格数图标 */
-.signal-bars {
-  font-family: monospace;
-  font-size: 13px;
-  letter-spacing: -1px;
-  flex-shrink: 0;
-}
-.signal--good { color: #48bb78; }
-.signal--mid  { color: #ed8936; }
-.signal--weak { color: #fc8181; }
-
-/* 标记 badge */
-.wifi-query__badge {
-  font-size: 10px;
-  padding: 1px 5px;
-  border-radius: 3px;
-  font-weight: normal;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.wifi-query__badge--connected { background: #48bb78; color: #fff; }
-.wifi-query__badge--saved     { background: rgba(88,164,246,0.15); color: var(--blue); }
-
-/* 按钮 */
 .wifi-query__btn {
-  padding: 2px 10px;
+  padding: 3px 11px;
   font-size: 12px;
-  border-radius: 4px;
+  font-weight: 500;
+  font-family: inherit;
+  border-radius: var(--radius-sm);
   line-height: 1.8;
   background: var(--blue);
   color: #fff;
+  border: 0.5px solid var(--blue);
   cursor: pointer;
-  border: none;
-  transition: opacity 0.15s;
+  transition: background var(--transition), opacity var(--transition);
+  white-space: nowrap;
 }
+.wifi-query__btn:hover { background: var(--blue-hover); }
+.wifi-query__btn:active { opacity: 0.8; }
 .wifi-query__btn--ghost {
   background: transparent;
   color: var(--blue);
-  border: 1px solid var(--blue);
+  border: 0.5px solid var(--border-mid);
 }
-.wifi-query__btn--copied  { background: #48bb78; }
-.wifi-query__btn--danger  {
-  background: transparent;
-  color: #f56565;
-  border: 1px solid #f56565;
-}
-.wifi-query__btn--danger:hover { background: rgba(245,101,101,0.08); }
-.wifi-query__btn:active { opacity: 0.7; }
+.wifi-query__btn--ghost:hover { background: var(--blue-light); }
+.wifi-query__btn--copied { background: var(--success); border-color: var(--success); color: #fff; }
+.wifi-query__btn--danger { background: transparent; color: var(--danger); border: 0.5px solid var(--border-mid); }
+.wifi-query__btn--danger:hover { background: rgba(220,38,38,0.07); }
+.wifi-query__btn--connecting { opacity: 0.55; cursor: not-allowed; }
 
-/* 删除确认条 */
 .wifi-query__delete-confirm {
-  margin-top: 7px;
-  padding: 8px 12px;
-  background: rgba(245,101,101,0.07);
-  border-radius: 6px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: rgba(220,38,38,0.06);
+  border: 0.5px solid rgba(220,38,38,0.2);
+  border-radius: var(--radius-md);
   display: flex;
   flex-direction: column;
   gap: 7px;
 }
-.wifi-query__delete-tip {
-  font-size: 12px;
-  color: #f56565;
-}
-.wifi-query__delete-actions {
-  display: flex;
-  gap: 6px;
-}
-.wifi-query__delete-error {
-  font-size: 11px;
-  color: #f56565;
-  opacity: 0.8;
-}
+.wifi-query__delete-tip { font-size: 12px; color: var(--danger); }
+.wifi-query__delete-actions { display: flex; gap: 6px; }
+.wifi-query__delete-error { font-size: 11px; color: var(--danger); opacity: 0.8; }
 
-/* 底部 */
 .wifi-query__footer {
-  padding: 7px 16px;
-  font-size: 12px;
-  opacity: 0.45;
+  padding: 7px 14px;
+  font-size: 11px;
+  color: var(--text-tertiary);
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 4px;
-  border-top: 1px solid rgba(128, 128, 128, 0.15);
+  border-top: 0.5px solid var(--border);
+  background: var(--bg-secondary);
   flex-shrink: 0;
 }
 .wifi-query__footer-sep { opacity: 0.5; }
@@ -877,288 +929,249 @@ function signalClass(signal: number): string {
   border: none;
   color: var(--blue);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
+  font-family: inherit;
+  font-weight: 500;
   padding: 0;
-  opacity: 1;
-  transition: opacity 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: opacity var(--transition);
 }
 .wifi-query__refresh:active { opacity: 0.6; }
 
-/* 引导提示（位置权限 / WiFi 未开启）*/
+.wifi-query__nearby-meta { flex-shrink: 0; display: flex; align-items: center; gap: 6px; }
+.wifi-query__signal-pct { font-size: 11px; font-variant-numeric: tabular-nums; color: var(--text-tertiary); min-width: 30px; text-align: right; }
+.wifi-query__nearby-info { margin-top: 4px; padding-left: 36px; font-size: 11px; color: var(--text-tertiary); }
+
+.signal-bars {
+  display: inline-flex;
+  gap: 2px;
+  align-items: flex-end;
+  flex-shrink: 0;
+  height: 16px;
+  vertical-align: middle;
+}
+.signal-bars span {
+  display: block;
+  width: 3px;
+  border-radius: 1px;
+  background: var(--border-mid);
+}
+.signal-bars span:nth-child(1) { height: 5px; }
+.signal-bars span:nth-child(2) { height: 8px; }
+.signal-bars span:nth-child(3) { height: 11px; }
+.signal-bars span:nth-child(4) { height: 15px; }
+.signal--good span { background: var(--success); }
+.signal--mid  span:nth-child(1),
+.signal--mid  span:nth-child(2),
+.signal--mid  span:nth-child(3) { background: #d97706; }
+.signal--weak span:nth-child(1) { background: var(--danger); }
+
+.wifi-query__badge {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.wifi-query__badge--connected { background: rgba(22,163,74,0.12); color: var(--success); }
+.wifi-query__badge--saved { background: var(--blue-badge); color: var(--blue); }
+
 .wifi-query__location-tip {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   padding: 24px;
   text-align: center;
 }
-.wifi-query__location-icon { font-size: 32px; }
-.wifi-query__location-title { font-weight: 600; font-size: 14px; }
-.wifi-query__location-desc { font-size: 12px; opacity: 0.5; max-width: 240px; line-height: 1.6; }
+.wifi-query__location-icon { font-size: 36px; line-height: 1; }
+.wifi-query__location-title { font-weight: 600; font-size: 14px; color: var(--text-primary); }
+.wifi-query__location-desc { font-size: 12px; color: var(--text-tertiary); max-width: 240px; line-height: 1.7; }
 .wifi-query__location-btn {
   margin-top: 4px;
   padding: 6px 20px;
   background: var(--blue);
   color: #fff;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: background var(--transition);
 }
-.wifi-query__location-btn:active { opacity: 0.7; }
+.wifi-query__location-btn:hover { background: var(--blue-hover); }
 
-@media (prefers-color-scheme: dark) {
-  .wifi-query__item:hover { background: rgba(255, 255, 255, 0.05); }
-  .wifi-query__badge--saved { background: rgba(88,164,246,0.2); }
-}
-
-/* 网络状态 Tab */
 .wifi-status {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 16px;
-  gap: 12px;
+  padding: 14px;
+  gap: 10px;
   overflow-y: auto;
 }
 .wifi-status__header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(128,128,128,0.15);
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 0.5px solid var(--border);
 }
 .wifi-status__ssid {
   flex: 1;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: var(--text-primary);
 }
-.wifi-status__signal {
-  font-size: 12px;
-  opacity: 0.5;
-  font-variant-numeric: tabular-nums;
-}
+.wifi-status__signal { font-size: 11px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
 .wifi-status__table {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 0.5px solid var(--border);
+  overflow: hidden;
 }
 .wifi-status__row {
   display: flex;
   align-items: center;
-  padding: 7px 0;
-  border-bottom: 1px solid rgba(128,128,128,0.08);
-  gap: 8px;
+  padding: 9px 14px;
+  border-bottom: 0.5px solid var(--border);
+  gap: 10px;
 }
 .wifi-status__row:last-child { border-bottom: none; }
-.wifi-status__label {
-  font-size: 12px;
-  opacity: 0.45;
-  width: 36px;
-  flex-shrink: 0;
-}
-.wifi-status__value {
-  flex: 1;
-  font-size: 13px;
-  font-weight: 500;
-}
-.wifi-status__value--small {
-  font-size: 12px;
-  font-weight: normal;
-  opacity: 0.75;
-  word-break: break-all;
-}
-.wifi-status__value--ip {
-  font-family: monospace;
-  letter-spacing: 0.3px;
-}
+.wifi-status__label { font-size: 11px; color: var(--text-tertiary); width: 40px; flex-shrink: 0; }
+.wifi-status__value { flex: 1; font-size: 13px; font-weight: 500; color: var(--text-primary); }
+.wifi-status__value--small { font-size: 12px; font-weight: 400; color: var(--text-secondary); word-break: break-all; }
+.wifi-status__value--ip { font-family: "SF Mono", "Fira Code", monospace; letter-spacing: 0.3px; }
 .wifi-status__copy {
   flex-shrink: 0;
-  padding: 2px 8px;
+  padding: 2px 9px;
   font-size: 11px;
-  border-radius: 4px;
+  font-weight: 500;
+  font-family: inherit;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--blue);
-  border: 1px solid var(--blue);
+  border: 0.5px solid var(--border-mid);
   cursor: pointer;
-  transition: all 0.15s;
-  line-height: 1.8;
+  transition: background var(--transition);
+  line-height: 1.9;
 }
-.wifi-status__copy--done {
-  background: #48bb78;
-  border-color: #48bb78;
-  color: #fff;
-}
+.wifi-status__copy:hover { background: var(--blue-light); }
+.wifi-status__copy--done { background: var(--success); border-color: var(--success); color: #fff; }
 
-/* 右键菜单 */
 .wifi-query__context-menu {
   position: fixed;
   z-index: 9999;
-  background: #fff;
-  border: 1px solid rgba(128, 128, 128, 0.2);
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-  padding: 6px 0;
-  min-width: 140px;
+  background: var(--bg-primary);
+  border: 0.5px solid var(--border-mid);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  padding: 5px 0;
+  min-width: 148px;
   font-size: 13px;
 }
-.wifi-query__context-item {
-  padding: 8px 16px;
-  cursor: pointer;
-  transition: background 0.1s;
-}
-.wifi-query__context-item:hover {
-  background: rgba(88, 164, 246, 0.1);
-}
-.wifi-query__context-item--danger {
-  color: #f56565;
-}
-.wifi-query__context-item--danger:hover {
-  background: rgba(245, 101, 101, 0.1);
-}
-.wifi-query__context-divider {
-  height: 1px;
-  background: rgba(128, 128, 128, 0.15);
-  margin: 4px 0;
-}
+.wifi-query__context-item { padding: 8px 14px; cursor: pointer; color: var(--text-primary); transition: background var(--transition); }
+.wifi-query__context-item:hover { background: var(--bg-secondary); }
+.wifi-query__context-item--danger { color: var(--danger); }
+.wifi-query__context-item--danger:hover { background: rgba(220,38,38,0.07); }
+.wifi-query__context-divider { height: 0.5px; background: var(--border); margin: 4px 0; }
 
-@media (prefers-color-scheme: dark) {
-  .wifi-query__context-menu {
-    background: #2d2d2d;
-    border-color: rgba(255, 255, 255, 0.1);
-    color: #e0e0e0;
-  }
-  .wifi-query__context-item:hover {
-    background: rgba(88, 164, 246, 0.2);
-  }
-  .wifi-query__context-item--danger:hover {
-    background: rgba(245, 101, 101, 0.2);
-  }
-  .wifi-query__context-divider {
-    background: rgba(255, 255, 255, 0.1);
-  }
-}
-
-/* 密码输入弹窗 */
 .wifi-query__modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: rgba(0,0,0,0.45);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 10000;
 }
 .wifi-query__modal {
-  background: #fff;
-  border-radius: 12px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  border: 0.5px solid var(--border-mid);
   width: 300px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 12px 36px rgba(0,0,0,0.18);
   overflow: hidden;
 }
 .wifi-query__modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
+  padding: 13px 16px;
   font-weight: 600;
-  font-size: 14px;
-  border-bottom: 1px solid rgba(128, 128, 128, 0.15);
+  font-size: 13px;
+  border-bottom: 0.5px solid var(--border);
 }
 .wifi-query__modal-close {
-  background: none;
+  background: var(--bg-secondary);
   border: none;
-  font-size: 20px;
-  cursor: pointer;
-  color: #999;
-  padding: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 14px;
   line-height: 1;
-}
-.wifi-query__modal-close:hover { color: #333; }
-.wifi-query__modal-body {
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.wifi-query__modal-ssid {
+  cursor: pointer;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 500;
+  justify-content: center;
+  transition: background var(--transition);
+  padding: 0;
 }
+.wifi-query__modal-close:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+.wifi-query__modal-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.wifi-query__modal-ssid { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--text-primary); }
 .wifi-query__modal-icon { font-size: 16px; }
-.wifi-query__modal-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.wifi-query__modal-field label {
-  font-size: 12px;
-  color: #666;
-}
-.wifi-query__modal-input-wrap {
-  position: relative;
-}
+.wifi-query__modal-field { display: flex; flex-direction: column; gap: 6px; }
+.wifi-query__modal-field label { font-size: 11px; font-weight: 500; color: var(--text-tertiary); }
+.wifi-query__modal-input-wrap { position: relative; }
 .wifi-query__modal-input {
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid rgba(128, 128, 128, 0.3);
-  border-radius: 6px;
+  background: var(--bg-secondary);
+  border: 0.5px solid var(--border-mid);
+  border-radius: var(--radius-md);
   font-size: 13px;
+  font-family: inherit;
+  color: var(--text-primary);
   outline: none;
   box-sizing: border-box;
+  transition: border-color var(--transition);
 }
-.wifi-query__modal-input:focus {
-  border-color: var(--blue);
-}
-.wifi-query__modal-error {
-  font-size: 12px;
-  color: #f56565;
-}
+.wifi-query__modal-input:focus { border-color: var(--blue); }
+.wifi-query__modal-error { font-size: 12px; color: var(--danger); }
 .wifi-query__modal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
   padding: 12px 16px;
-  border-top: 1px solid rgba(128, 128, 128, 0.15);
-}
-.wifi-query__btn--connecting {
-  opacity: 0.7;
-  cursor: not-allowed;
+  border-top: 0.5px solid var(--border);
+  background: var(--bg-secondary);
 }
 
-@media (prefers-color-scheme: dark) {
-  .wifi-query__modal {
-    background: #2d2d2d;
-    color: #e0e0e0;
-  }
-  .wifi-query__modal-header {
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-  .wifi-query__modal-close:hover { color: #fff; }
-  .wifi-query__modal-body {
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-  .wifi-query__modal-field label { color: #999; }
-  .wifi-query__modal-input {
-    background: #3d3d3d;
-    border-color: rgba(255, 255, 255, 0.15);
-    color: #e0e0e0;
-  }
-  .wifi-query__modal-footer {
-    border-color: rgba(255, 255, 255, 0.1);
-  }
+.wifi-query__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+.wifi-query__empty-icon {
+  width: 36px;
+  height: 36px;
+  opacity: 0.45;
 }
 </style>
