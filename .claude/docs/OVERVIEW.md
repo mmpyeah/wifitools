@@ -120,8 +120,9 @@ function execUTF8(cmd) {
 
 | code | 触发词 | 入口组件 | 说明 |
 |------|--------|----------|------|
-| `wifi-query` | WiFi密码 / 查询WiFi | `WifiQuery` | 首页，双 Tab |
+| `wifi-query` | WiFi密码 / 查询WiFi | `WifiQuery` | 首页，双 Tab（已保存 + 周边热点） |
 | `wifi-qrcode` | WiFi二维码 | `WifiQrcode` | 从 wifi-query 跳转或独立触发 |
+| `wifi-list` | — | `WifiQuery` 周边热点 Tab | 内嵌在首页，无独立入口 |
 
 ### WifiQuery 首页双 Tab
 

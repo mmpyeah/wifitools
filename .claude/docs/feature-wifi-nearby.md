@@ -114,8 +114,13 @@ setTimeout(() => {
 ```
 
 ### 4. 多 BSSID 去重
-同一 SSID 可能由多个接入点广播（企业网、mesh 路由），`mode=bssid` 会列出每个 BSSID。
-处理方式：解析时取同一 SSID 下所有 BSSID 中的最大信号值，最终按 SSID 去重。
+同一 SSID 可能由多个接入点广播（企业网、mesh 路由），`mode=bssid` 会列出每个 BSSID。实际测试中出现过一个 SSID 包含 25 个 BSSID 的情况。
+部分 BSSID 块可能没有信号字段（隐藏 AP），处理方式：过滤无信号的 BSSID，只要有一个有信号就保留，全部没有则显示 0%。最终按 SSID 去重。
+
+```js
+const validSignals = signalMatches.map(m => parseInt(m[1])).filter(n => !isNaN(n))
+const signal = validSignals.length > 0 ? Math.max(...validSignals) : 0
+```
 
 ### 5. 中英文兼容
 | 字段 | 中文系统 | 英文系统 |

@@ -152,4 +152,4 @@ npm run build  # 构建生产包
 
 - [x] `wifi-query` — 查询系统已保存的 WiFi 密码
 - [x] `wifi-qrcode` — 生成 WiFi 二维码，供手机扫码连接
-- [ ] `wifi-list` — 列出当前环境可用 WiFi 列表及信号强度
+- [x] `wifi-list` — 列出当前环境可用 WiFi 列表及信号强度（内嵌在 wifi-query 周边热点 Tab）
