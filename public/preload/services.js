@@ -69,6 +69,58 @@ window.services = {
     }
   },
 
+  // 获取当前 WiFi 连接详情
+  // 返回 { ssid, signal, channel, band, rxRate, txRate, auth, adapter, ipv4, ipv6, mac } 或 null
+  getWifiStatus () {
+    try {
+      const wlanText = execUTF8('netsh wlan show interfaces')
+
+      // 未连接判断（中英文）
+      if (/(?:已断开连接|disconnected|not connected)/i.test(wlanText)) return null
+
+      const pick = (re) => {
+        const m = re.exec(wlanText)
+        return m ? m[1].trim() : ''
+      }
+
+      // SSID：精确匹配“SSID”字段，排除 BSSID 行（含 AP BSSID / BSSID 字样）
+      const ssid = pick(/^[ \t]+SSID[ \t]*:[ \t]*(.+)$/m)
+      if (!ssid) return null
+
+      const signal  = pick(/(?:信号|Signal)\s*:\s*(\d+)%/i)
+      const channel = pick(/(?:信道|频道|Channel)\s*:\s*(\d+)/i)
+      const rxRate  = pick(/(?:接收速率|Receive rate)\s*\([Mm]bps\)\s*:\s*([\d.]+)/i)
+      const txRate  = pick(/(?:传输速率|Transmit rate)\s*\([Mm]bps\)\s*:\s*([\d.]+)/i)
+      const auth    = pick(/(?:身份验证|Authentication)\s*:\s*(.+)/i)
+      const adapter = pick(/(?:描述|Description)\s*:\s*(.+)/i)
+      const mac     = pick(/(?:物理地址|Physical address)\s*:\s*([\da-fA-F:-]+)/i)
+
+      // 适配器名称（中英文）
+      const adapterName = pick(/(?:^|\n)[ \t]*(?:名称|Name)[ \t]*:[ \t]*(.+)/i)
+
+      // IP 地址：按适配器标题行分割，精确匹配 adapterName
+      let ipv4 = '', ipv6 = ''
+      try {
+        const ipcfg = execUTF8('ipconfig')
+        // 按适配器标题行分割（如 "Wireless LAN adapter WLAN:"）
+        const sections = ipcfg.split(/\r?\n(?=\S)/)
+        // 找标题行末尾包含 adapterName: 的块，精确匹配避免 WLAN 匹配到 WLAN 3
+        const block = sections.find(s => {
+          const title = s.split(/\r?\n/)[0]
+          return new RegExp(`\\b${adapterName}\\s*:`).test(title)
+        }) || ''
+        const ipv4m = /IPv4[^:]*:\s*([\d.]+)/.exec(block)
+        const ipv6m = /IPv6 Address[^:]*:\s*([\da-f:]+)(?!\S*%)/i.exec(block)
+        if (ipv4m) ipv4 = ipv4m[1].trim()
+        if (ipv6m) ipv6 = ipv6m[1].trim()
+      } catch { /* IP 获取失败不影响主体 */ }
+
+      return { ssid, signal, channel, rxRate, txRate, auth, adapter, adapterName, mac, ipv4, ipv6 }
+    } catch {
+      return null
+    }
+  },
+
   // 扫描周边可用 WiFi 列表，按信号强度降序
   // 返回 [{ ssid, signal, band, auth, saved }]
   // 若系统未开启位置服务，抛出 { code: 'LOCATION_REQUIRED' }

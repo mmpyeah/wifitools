@@ -124,6 +124,25 @@ function execUTF8(cmd) {
 | `wifi-qrcode` | WiFi二维码 | `WifiQrcode` | 从 wifi-query 跳转或独立触发 |
 | `wifi-list` | — | `WifiQuery` 周边热点 Tab | 内嵌在首页，无独立入口 |
 
+---
+
+## 待开发功能
+
+### 优先（改动小、价值高）
+
+| code | 说明 | 实现思路 |
+|------|------|----------|
+| `wifi-status` | 当前连接详情：SSID、IP、信号、频道、速率、网卡 | `netsh wlan show interfaces`，新页面或首页新 Tab |
+| `wifi-forget` | 删除已保存的 WiFi | 已保存列表各行加删除按钮，`netsh wlan delete profile name="xxx"` |
+| `wifi-card` | WiFi 分享卡片 | SSID+密码+二维码 canvas 合成图片，复用 `writeImageFile` |
+
+### 后续
+
+| code | 说明 | 实现思路 |
+|------|------|----------|
+| `wifi-diagnose` | 网络诊断一键修复 | ping 网关/DNS/外网，分层判断断网原因，提供修复命令按钮 |
+| `wifi-dns` | DNS 快速切换 | 一键切换自动/114/阿里/Google/Cloudflare DNS |
+
 ### WifiQuery 首页双 Tab
 
 ```

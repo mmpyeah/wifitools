@@ -28,7 +28,7 @@ interface NearbyWifi {
 }
 
 // ─── 公共状态 ────────────────────────────────────────────
-const activeTab = ref<'saved' | 'nearby'>('saved')
+const activeTab = ref<'saved' | 'nearby' | 'status'>('saved')
 const keyword = ref('')
 const copiedSsid = ref('')
 
@@ -97,11 +97,14 @@ const filteredNearby = computed(() => {
   return nearbyList.value.filter(i => i.ssid.toLowerCase().includes(kw))
 })
 
-function switchTab(tab: 'saved' | 'nearby') {
+function switchTab(tab: 'saved' | 'nearby' | 'status') {
   activeTab.value = tab
   keyword.value = ''
   if (tab === 'nearby' && !nearbyLoaded.value) {
     scanNearby()
+  }
+  if (tab === 'status') {
+    loadStatus()
   }
 }
 
@@ -139,6 +142,41 @@ function openLocationSettings() {
   window.utools.shellOpenExternal('ms-settings:privacy-location')
 }
 
+// ─── 网络状态 Tab ────────────────────────────────────────
+interface WifiStatus {
+  ssid: string
+  signal: string
+  channel: string
+  rxRate: string
+  txRate: string
+  auth: string
+  adapter: string
+  adapterName: string
+  mac: string
+  ipv4: string
+  ipv6: string
+}
+
+const statusLoading = ref(false)
+const statusData = ref<WifiStatus | null>(null)
+const copiedIP = ref(false)
+
+function loadStatus() {
+  statusLoading.value = true
+  setTimeout(() => {
+    statusData.value = window.services.getWifiStatus()
+    statusLoading.value = false
+  }, 50)
+}
+
+function copyIP() {
+  if (!statusData.value?.ipv4) return
+  window.utools.copyText(statusData.value.ipv4)
+  copiedIP.value = true
+  setTimeout(() => { copiedIP.value = false }, 1500)
+}
+
+// 信号强度 → 格数图标、颜色（与周边热点 Tab 共用）
 function signalIcon(signal: number): string {
   if (signal >= 80) return '▂▄▆█'
   if (signal >= 60) return '▂▄▆░'
@@ -186,6 +224,13 @@ function signalClass(signal: number): string {
       >
         周边热点
         <span v-if="nearbyLoaded && nearbyList.length" class="wifi-query__tab-count">{{ nearbyList.length }}</span>
+      </button>
+      <button
+        class="wifi-query__tab"
+        :class="{ 'wifi-query__tab--active': activeTab === 'status' }"
+        @click="switchTab('status')"
+      >
+        网络状态
       </button>
     </div>
 
@@ -295,6 +340,62 @@ function signalClass(signal: number): string {
           <span class="wifi-query__footer-sep"> · </span>
         </template>
         <button class="wifi-query__refresh" @click="scanNearby">{{ nearbyLoading ? '扫描中...' : '刷新' }}</button>
+      </div>
+    </template>
+
+    <!-- ══════════ 网络状态 Tab ══════════ -->
+    <template v-if="activeTab === 'status'">
+      <div v-if="statusLoading" class="wifi-query__status">正在读取网络状态...</div>
+      <div v-else-if="!statusData" class="wifi-query__status">
+        <div style="text-align:center">
+          <div style="font-size:32px;margin-bottom:8px">📵</div>
+          <div>当前未连接 WiFi</div>
+        </div>
+      </div>
+      <div v-else class="wifi-status">
+        <!-- SSID + 信号 -->
+        <div class="wifi-status__header">
+          <span class="signal-bars" :class="signalClass(parseInt(statusData.signal))">{{ signalIcon(parseInt(statusData.signal)) }}</span>
+          <span class="wifi-status__ssid">{{ statusData.ssid }}</span>
+          <span class="wifi-status__signal">{{ statusData.signal }}%</span>
+        </div>
+        <!-- 信息表格 -->
+        <div class="wifi-status__table">
+          <div v-if="statusData.ipv4" class="wifi-status__row">
+            <span class="wifi-status__label">IPv4</span>
+            <span class="wifi-status__value wifi-status__value--ip">{{ statusData.ipv4 }}</span>
+            <button class="wifi-status__copy" :class="{ 'wifi-status__copy--done': copiedIP }" @click="copyIP">
+              {{ copiedIP ? '✓' : '复制' }}
+            </button>
+          </div>
+          <div v-if="statusData.ipv6" class="wifi-status__row">
+            <span class="wifi-status__label">IPv6</span>
+            <span class="wifi-status__value wifi-status__value--small">{{ statusData.ipv6 }}</span>
+          </div>
+          <div v-if="statusData.channel" class="wifi-status__row">
+            <span class="wifi-status__label">频道</span>
+            <span class="wifi-status__value">{{ statusData.channel }}</span>
+          </div>
+          <div v-if="statusData.rxRate || statusData.txRate" class="wifi-status__row">
+            <span class="wifi-status__label">速率</span>
+            <span class="wifi-status__value">收 {{ statusData.rxRate }} / 发 {{ statusData.txRate }} Mbps</span>
+          </div>
+          <div v-if="statusData.auth" class="wifi-status__row">
+            <span class="wifi-status__label">加密</span>
+            <span class="wifi-status__value">{{ statusData.auth }}</span>
+          </div>
+          <div v-if="statusData.mac" class="wifi-status__row">
+            <span class="wifi-status__label">MAC</span>
+            <span class="wifi-status__value wifi-status__value--small">{{ statusData.mac }}</span>
+          </div>
+          <div v-if="statusData.adapter" class="wifi-status__row">
+            <span class="wifi-status__label">网卡</span>
+            <span class="wifi-status__value wifi-status__value--small">{{ statusData.adapter }}</span>
+          </div>
+        </div>
+      </div>
+      <div v-if="!statusLoading" class="wifi-query__footer">
+        <button class="wifi-query__refresh" @click="loadStatus">刷新</button>
       </div>
     </template>
 
@@ -555,5 +656,86 @@ function signalClass(signal: number): string {
 @media (prefers-color-scheme: dark) {
   .wifi-query__item:hover { background: rgba(255, 255, 255, 0.05); }
   .wifi-query__badge--saved { background: rgba(88,164,246,0.2); }
+}
+
+/* 网络状态 Tab */
+.wifi-status {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  gap: 12px;
+  overflow-y: auto;
+}
+.wifi-status__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(128,128,128,0.15);
+}
+.wifi-status__ssid {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wifi-status__signal {
+  font-size: 12px;
+  opacity: 0.5;
+  font-variant-numeric: tabular-nums;
+}
+.wifi-status__table {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.wifi-status__row {
+  display: flex;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(128,128,128,0.08);
+  gap: 8px;
+}
+.wifi-status__row:last-child { border-bottom: none; }
+.wifi-status__label {
+  font-size: 12px;
+  opacity: 0.45;
+  width: 36px;
+  flex-shrink: 0;
+}
+.wifi-status__value {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+}
+.wifi-status__value--small {
+  font-size: 12px;
+  font-weight: normal;
+  opacity: 0.75;
+  word-break: break-all;
+}
+.wifi-status__value--ip {
+  font-family: monospace;
+  letter-spacing: 0.3px;
+}
+.wifi-status__copy {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  font-size: 11px;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--blue);
+  border: 1px solid var(--blue);
+  cursor: pointer;
+  transition: all 0.15s;
+  line-height: 1.8;
+}
+.wifi-status__copy--done {
+  background: #48bb78;
+  border-color: #48bb78;
+  color: #fff;
 }
 </style>
