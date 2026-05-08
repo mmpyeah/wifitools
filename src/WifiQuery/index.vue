@@ -38,6 +38,8 @@ const savedError = ref('')
 const wifiList = ref<SavedWifi[]>([])
 const deletingSSID = ref('')    // 当前正在确认删除的 SSID
 const deleteError = ref('')     // 删除失败提示
+const contextMenuItem = ref<SavedWifi | null>(null)  // 右键菜单目标
+const contextMenuPos = ref({ x: 0, y: 0 })  // 右键菜单位置
 
 const filteredSaved = computed(() => {
   const kw = keyword.value.trim().toLowerCase()
@@ -102,15 +104,33 @@ function cancelDelete() {
 }
 
 function doDelete(item: SavedWifi) {
+  if (!confirm(`确定要删除已保存的 WiFi「${item.ssid}」吗？`)) return
   try {
     window.services.deleteWifiProfile(item.ssid)
     wifiList.value = wifiList.value.filter(i => i.ssid !== item.ssid)
     deletingSSID.value = ''
     deleteError.value = ''
+    contextMenuItem.value = null
   } catch (err: any) {
     deleteError.value = err.message || '删除失败'
   }
 }
+
+// 右键菜单
+function showContextMenu(event: MouseEvent, item: SavedWifi) {
+  event.preventDefault()
+  contextMenuItem.value = item
+  contextMenuPos.value = { x: event.clientX, y: event.clientY }
+}
+
+function hideContextMenu() {
+  contextMenuItem.value = null
+}
+
+// 点击其他区域关闭右键菜单
+onMounted(() => {
+  document.addEventListener('click', hideContextMenu)
+})
 
 // ─── 周边热点 Tab ────────────────────────────────────────
 const nearbyLoading = ref(false)
@@ -272,7 +292,12 @@ function signalClass(signal: number): string {
         {{ keyword ? '没有匹配的 WiFi' : '未找到已保存的 WiFi' }}
       </div>
       <ul v-else class="wifi-query__list">
-        <li v-for="item in filteredSaved" :key="item.ssid" class="wifi-query__item">
+        <li
+          v-for="item in filteredSaved"
+          :key="item.ssid"
+          class="wifi-query__item"
+          @contextmenu="showContextMenu($event, item)"
+        >
           <div class="wifi-query__item-header">
             <span class="wifi-query__ssid">
               <span class="wifi-query__icon">📶</span>
@@ -281,38 +306,53 @@ function signalClass(signal: number): string {
             <div class="wifi-query__actions">
               <button
                 v-if="item.password"
-                class="wifi-query__btn wifi-query__btn--ghost"
-                @click="toggleVisible(item)"
-              >{{ item.visible ? '隐藏' : '显示' }}</button>
-              <button
-                v-if="item.password"
                 class="wifi-query__btn"
                 :class="{ 'wifi-query__btn--copied': copiedSsid === item.ssid }"
                 @click="copyPassword(item)"
               >{{ copiedSsid === item.ssid ? '已复制' : '复制' }}</button>
-              <button class="wifi-query__btn wifi-query__btn--ghost" @click="showQrcode(item)">二维码</button>
-              <button class="wifi-query__btn wifi-query__btn--ghost" @click="showCard(item)">卡片</button>
-              <button class="wifi-query__btn wifi-query__btn--danger" @click="confirmDelete(item)">删除</button>
+              <button class="wifi-query__btn wifi-query__btn--ghost" @click="showCard(item)">分享</button>
             </div>
           </div>
           <div class="wifi-query__password">
             <template v-if="item.password">
               <span v-if="item.visible">{{ item.password }}</span>
               <span v-else class="wifi-query__mask">••••••••••</span>
+              <button class="wifi-query__toggle-visibility" @click.stop="toggleVisible(item)">
+                <svg v-if="item.visible" class="wifi-query__eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg v-else class="wifi-query__eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                  <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              </button>
             </template>
             <span v-else class="wifi-query__no-password">无密码 / 企业认证</span>
           </div>
-          <!-- 删除确认条 -->
-          <div v-if="deletingSSID === item.ssid" class="wifi-query__delete-confirm">
-            <span class="wifi-query__delete-tip">确认删除「{{ item.ssid }}」的保存记录？</span>
-            <div class="wifi-query__delete-actions">
-              <button class="wifi-query__btn wifi-query__btn--danger" @click="doDelete(item)">确认删除</button>
-              <button class="wifi-query__btn wifi-query__btn--ghost" @click="cancelDelete">取消</button>
-            </div>
-            <div v-if="deleteError" class="wifi-query__delete-error">{{ deleteError }}</div>
-          </div>
         </li>
       </ul>
+      <!-- 右键菜单 -->
+      <Teleport to="body">
+        <div
+          v-if="contextMenuItem"
+          class="wifi-query__context-menu"
+          :style="{ left: contextMenuPos.x + 'px', top: contextMenuPos.y + 'px' }"
+          @click.stop
+        >
+          <div class="wifi-query__context-item" @click="() => { copyPassword(contextMenuItem!); hideContextMenu() }">
+            复制密码
+          </div>
+          <div class="wifi-query__context-item" @click="() => { showQrcode(contextMenuItem!); hideContextMenu() }">
+            查看二维码
+          </div>
+          <div class="wifi-query__context-divider"></div>
+          <div class="wifi-query__context-item wifi-query__context-item--danger" @click="() => { doDelete(contextMenuItem!); hideContextMenu() }">
+            删除
+          </div>
+        </div>
+      </Teleport>
       <div v-if="!savedLoading && !savedError && wifiList.length > 0" class="wifi-query__footer">
         共 {{ wifiList.length }} 个已保存
         <template v-if="keyword && filteredSaved.length !== wifiList.length">
@@ -564,7 +604,12 @@ function signalClass(signal: number): string {
   gap: 5px;
 }
 .wifi-query__icon { flex-shrink: 0; }
-.wifi-query__actions { display: flex; gap: 6px; flex-shrink: 0; }
+.wifi-query__actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  align-items: center;
+}
 
 /* 已保存密码行 */
 .wifi-query__password {
@@ -574,9 +619,25 @@ function signalClass(signal: number): string {
   opacity: 0.7;
   font-family: monospace;
   letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .wifi-query__mask { letter-spacing: 2px; opacity: 0.5; }
 .wifi-query__no-password { font-family: inherit; font-style: italic; opacity: 0.5; }
+.wifi-query__toggle-visibility {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  color: var(--text-secondary, #666);
+  opacity: 0.6;
+  transition: opacity 0.15s;
+  display: flex;
+  align-items: center;
+}
+.wifi-query__toggle-visibility:hover { opacity: 1; }
+.wifi-query__eye-icon { width: 16px; height: 16px; }
 
 /* 周边热点附加信息 */
 .wifi-query__nearby-meta {
@@ -808,5 +869,54 @@ function signalClass(signal: number): string {
   background: #48bb78;
   border-color: #48bb78;
   color: #fff;
+}
+
+/* 右键菜单 */
+.wifi-query__context-menu {
+  position: fixed;
+  z-index: 9999;
+  background: #fff;
+  border: 1px solid rgba(128, 128, 128, 0.2);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  padding: 6px 0;
+  min-width: 140px;
+  font-size: 13px;
+}
+.wifi-query__context-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.wifi-query__context-item:hover {
+  background: rgba(88, 164, 246, 0.1);
+}
+.wifi-query__context-item--danger {
+  color: #f56565;
+}
+.wifi-query__context-item--danger:hover {
+  background: rgba(245, 101, 101, 0.1);
+}
+.wifi-query__context-divider {
+  height: 1px;
+  background: rgba(128, 128, 128, 0.15);
+  margin: 4px 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .wifi-query__context-menu {
+    background: #2d2d2d;
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #e0e0e0;
+  }
+  .wifi-query__context-item:hover {
+    background: rgba(88, 164, 246, 0.2);
+  }
+  .wifi-query__context-item--danger:hover {
+    background: rgba(245, 101, 101, 0.2);
+  }
+  .wifi-query__context-divider {
+    background: rgba(255, 255, 255, 0.1);
+  }
 }
 </style>

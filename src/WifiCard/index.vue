@@ -30,6 +30,7 @@ const qrcodeValue = computed(() => {
 // ─── 卡片合成 ────────────────────────────────────────────
 const cardCanvas = ref<HTMLCanvasElement | null>(null)
 const saved      = ref(false)
+const copied     = ref(false)
 
 // QrcodeCanvas 渲染到隐藏 DOM 后，再绘制合成卡片
 onMounted(() => { scheduleRender() })
@@ -172,6 +173,14 @@ function saveImage() {
   }
 }
 
+// ─── 复制密码 ─────────────────────────────────────────────
+function copyPassword() {
+  if (!password.value) return
+  window.utools.copyText(password.value)
+  copied.value = true
+  setTimeout(() => { copied.value = false }, 1500)
+}
+
 function goBack() {
   props.navigateTo('wifi-query')
 }
@@ -194,7 +203,15 @@ function goBack() {
       <!-- 操作按钮 -->
       <div class="wifi-card__actions">
         <button
-          class="wifi-card__btn"
+          class="wifi-card__btn wifi-card__btn--ghost"
+          :class="{ 'wifi-card__btn--copied': copied }"
+          :disabled="!password"
+          @click="copyPassword"
+        >
+          {{ copied ? '已复制 ✓' : '复制密码' }}
+        </button>
+        <button
+          class="wifi-card__btn wifi-card__btn--primary"
           :class="{ 'wifi-card__btn--saved': saved }"
           :disabled="!ssid"
           @click="saveImage"
@@ -202,8 +219,6 @@ function goBack() {
           {{ saved ? '已保存 ✓' : '保存图片' }}
         </button>
       </div>
-
-      <p class="wifi-card__tip">图片保存到下载目录，可直接打印或发送给他人</p>
     </div>
 
     <!-- 离屏 QrcodeCanvas，供 canvas drawImage 合成用 -->
@@ -281,16 +296,24 @@ function goBack() {
 /* 按钮 */
 .wifi-card__actions { display: flex; gap: 10px; }
 .wifi-card__btn {
-  padding: 7px 28px;
+  padding: 7px 24px;
   font-size: 13px;
   border-radius: 6px;
-  background: var(--blue);
-  color: #fff;
-  border: none;
   cursor: pointer;
   transition: opacity 0.15s, background 0.2s;
   line-height: 1.8;
 }
+.wifi-card__btn--primary {
+  background: var(--blue);
+  color: #fff;
+  border: none;
+}
+.wifi-card__btn--ghost {
+  background: transparent;
+  color: var(--blue);
+  border: 1px solid var(--blue);
+}
+.wifi-card__btn--copied { background: #48bb78; border-color: #48bb78; color: #fff; }
 .wifi-card__btn--saved   { background: #48bb78; }
 .wifi-card__btn:disabled { opacity: 0.4; cursor: default; }
 .wifi-card__btn:not(:disabled):active { opacity: 0.7; }
