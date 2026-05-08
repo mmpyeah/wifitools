@@ -86,8 +86,9 @@ function showQrcode(item: SavedWifi) {
 const nearbyLoading = ref(false)
 const nearbyError = ref('')
 const nearbyLocationRequired = ref(false)
+const nearbyWifiOff = ref(false)
 const nearbyList = ref<NearbyWifi[]>([])
-const nearbyLoaded = ref(false) // 是否已经加载过一次
+const nearbyLoaded = ref(false)
 const currentSsid = ref<string | null>(null)
 
 const filteredNearby = computed(() => {
@@ -99,7 +100,6 @@ const filteredNearby = computed(() => {
 function switchTab(tab: 'saved' | 'nearby') {
   activeTab.value = tab
   keyword.value = ''
-  // 切换到周边热点且未加载过时，自动触发扫描
   if (tab === 'nearby' && !nearbyLoaded.value) {
     scanNearby()
   }
@@ -108,6 +108,8 @@ function switchTab(tab: 'saved' | 'nearby') {
 function scanNearby() {
   nearbyLoading.value = true
   nearbyError.value = ''
+  nearbyLocationRequired.value = false
+  nearbyWifiOff.value = false
   // 用 setTimeout 让 loading 状态先渲染出来，再执行耗时同步命令
   setTimeout(() => {
     try {
@@ -115,10 +117,11 @@ function scanNearby() {
       const savedSsids = wifiList.value.map(i => i.ssid)
       nearbyList.value = window.services.scanWifiNetworks(savedSsids)
       nearbyLoaded.value = true
-      nearbyLocationRequired.value = false
     } catch (err: any) {
       if (err.code === 'LOCATION_REQUIRED') {
         nearbyLocationRequired.value = true
+      } else if (err.code === 'WIFI_OFF') {
+        nearbyWifiOff.value = true
       } else {
         nearbyError.value = err.message || '扫描失败'
       }
@@ -128,7 +131,10 @@ function scanNearby() {
   }, 50)
 }
 
-// 信号强度 → 格数图标（4格）
+function openLocationSettings() {
+  window.utools.shellOpenExternal('ms-settings:privacy-location')
+}
+
 function signalIcon(signal: number): string {
   if (signal >= 80) return '▂▄▆█'
   if (signal >= 60) return '▂▄▆░'
@@ -137,7 +143,6 @@ function signalIcon(signal: number): string {
   return '░░░░'
 }
 
-// 信号强度 → 颜色 class
 function signalClass(signal: number): string {
   if (signal >= 70) return 'signal--good'
   if (signal >= 40) return 'signal--mid'
@@ -188,11 +193,7 @@ function signalClass(signal: number): string {
         {{ keyword ? '没有匹配的 WiFi' : '未找到已保存的 WiFi' }}
       </div>
       <ul v-else class="wifi-query__list">
-        <li
-          v-for="item in filteredSaved"
-          :key="item.ssid"
-          class="wifi-query__item"
-        >
+        <li v-for="item in filteredSaved" :key="item.ssid" class="wifi-query__item">
           <div class="wifi-query__item-header">
             <span class="wifi-query__ssid">
               <span class="wifi-query__icon">📶</span>
@@ -210,10 +211,7 @@ function signalClass(signal: number): string {
                 :class="{ 'wifi-query__btn--copied': copiedSsid === item.ssid }"
                 @click="copyPassword(item)"
               >{{ copiedSsid === item.ssid ? '已复制' : '复制' }}</button>
-              <button
-                class="wifi-query__btn wifi-query__btn--ghost"
-                @click="showQrcode(item)"
-              >二维码</button>
+              <button class="wifi-query__btn wifi-query__btn--ghost" @click="showQrcode(item)">二维码</button>
             </div>
           </div>
           <div class="wifi-query__password">
@@ -236,35 +234,39 @@ function signalClass(signal: number): string {
     <!-- ══════════ 周边热点 Tab ══════════ -->
     <template v-if="activeTab === 'nearby'">
       <div v-if="nearbyLoading" class="wifi-query__status">正在扫描周边热点...</div>
+
+      <!-- WiFi 未开启 -->
+      <div v-else-if="nearbyWifiOff" class="wifi-query__location-tip">
+        <div class="wifi-query__location-icon">📵</div>
+        <div class="wifi-query__location-title">WiFi 未开启</div>
+        <div class="wifi-query__location-desc">请先开启无线网卡或 WiFi 开关，再来扫描周边热点</div>
+        <button class="wifi-query__refresh" style="margin-top:12px" @click="scanNearby">重新扫描</button>
+      </div>
+
+      <!-- 需要位置权限 -->
       <div v-else-if="nearbyLocationRequired" class="wifi-query__location-tip">
         <div class="wifi-query__location-icon">📍</div>
         <div class="wifi-query__location-title">需要位置服务权限</div>
-        <div class="wifi-query__location-desc">Windows 11 扫描周边 WiFi 需要开启位置服务</div>
-        <button class="wifi-query__location-btn" @click="() => { window.utools.shellOpenExternal('ms-settings:privacy-location') }">
-          打开位置设置
-        </button>
+        <div class="wifi-query__location-desc">请在位置设置页中，开启「位置服务」并打开「允许桌面应用访问你的位置」</div>
+        <button class="wifi-query__location-btn" @click="openLocationSettings">打开位置设置</button>
         <button class="wifi-query__refresh" style="margin-top:8px" @click="scanNearby">已开启，重新扫描</button>
       </div>
+
+      <!-- 其他错误 -->
       <div v-else-if="nearbyError" class="wifi-query__error">{{ nearbyError }}</div>
+
       <div v-else-if="!nearbyLoaded" class="wifi-query__status">准备扫描</div>
       <div v-else-if="filteredNearby.length === 0" class="wifi-query__status">
         {{ keyword ? '没有匹配的热点' : '未找到周边热点' }}
       </div>
       <ul v-else class="wifi-query__list">
-        <li
-          v-for="item in filteredNearby"
-          :key="item.ssid"
-          class="wifi-query__item wifi-query__item--nearby"
-        >
+        <li v-for="item in filteredNearby" :key="item.ssid" class="wifi-query__item wifi-query__item--nearby">
           <div class="wifi-query__item-header">
             <div class="wifi-query__ssid">
-              <!-- 信号格数 -->
               <span class="signal-bars" :class="signalClass(item.signal)">{{ signalIcon(item.signal) }}</span>
               <span class="wifi-query__ssid-text">
                 {{ item.ssid }}
-                <!-- 当前连接标记 -->
                 <span v-if="item.ssid === currentSsid" class="wifi-query__badge wifi-query__badge--connected">已连接</span>
-                <!-- 已保存标记 -->
                 <span v-else-if="item.saved" class="wifi-query__badge wifi-query__badge--saved">已保存</span>
               </span>
             </div>
@@ -518,7 +520,7 @@ function signalClass(signal: number): string {
 }
 .wifi-query__refresh:active { opacity: 0.6; }
 
-/* 位置权限引导 */
+/* 引导提示（位置权限 / WiFi 未开启）*/
 .wifi-query__location-tip {
   flex: 1;
   display: flex;

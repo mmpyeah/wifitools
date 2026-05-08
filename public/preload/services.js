@@ -56,9 +56,6 @@ window.services = {
   getCurrentWifi () {
     try {
       const text = execUTF8('netsh wlan show interfaces')
-      // 兼容中英文：SSID 字段（注意排除 BSSID 行）
-      const match = /^\s+(?:SSID|SSID)\s*:\s*(?!.+(?:BSSID))(.+)$/m.exec(text)
-      // 更精确：只匹配 "   SSID  : xxx" 而非 BSSID 行
       const lines = text.split('\n')
       for (const line of lines) {
         // 跳过含 BSSID 的行
@@ -76,13 +73,47 @@ window.services = {
   // 返回 [{ ssid, signal, band, auth, saved }]
   // 若系统未开启位置服务，抛出 { code: 'LOCATION_REQUIRED' }
   scanWifiNetworks (savedSsids) {
-    const text = execUTF8('netsh wlan show networks mode=bssid')
-    // 检测位置权限错误
-    if (text.includes('ms-settings:privacy-location') || text.includes('位置权限') || text.includes('拒绝访问')) {
+    let text
+    try {
+      text = execUTF8('netsh wlan show networks mode=bssid')
+    } catch (e) {
+      // execSync 在命令退出码非 0 时直接 throw，stdout/stderr 里含有位置权限提示
+      const output = (e.stdout || '') + (e.stderr || '') + (e.message || '')
+      if (
+        output.includes('ms-settings:privacy-location') ||
+        output.includes('位置权限') ||
+        output.includes('location permission') ||
+        output.includes('拒绝访问') ||
+        output.includes('Access is denied')
+      ) {
+        const err = new Error('需要开启位置服务')
+        err.code = 'LOCATION_REQUIRED'
+        throw err
+      }
+      if (
+        output.includes('电源关闭') ||
+        output.includes('power') ||
+        output.includes('不支持请求的操作') ||
+        output.includes('The request is not supported')
+      ) {
+        const err = new Error('无线网卡已关闭，请先开启 WiFi')
+        err.code = 'WIFI_OFF'
+        throw err
+      }
+      throw e
+    }
+
+    // 命令成功但输出中仍含位置权限提示（部分 Windows 版本混在正文里输出）
+    if (
+      text.includes('ms-settings:privacy-location') ||
+      text.includes('位置权限') ||
+      text.includes('拒绝访问')
+    ) {
       const err = new Error('需要开启位置服务')
       err.code = 'LOCATION_REQUIRED'
       throw err
     }
+
     const results = []
     const savedSet = new Set((savedSsids || []).map(s => s.toLowerCase()))
 
