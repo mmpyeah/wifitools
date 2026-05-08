@@ -58,9 +58,10 @@ window.services = {
       const text = execUTF8('netsh wlan show interfaces')
       const lines = text.split('\n')
       for (const line of lines) {
-        // 跳过含 BSSID 的行
+        // 跳过 BSSID 行（含 BSSID 字样的行）
         if (/BSSID/i.test(line)) continue
-        const m = /^\s+(?:SSID)\s*:\s*(.+)$/.exec(line)
+        // 匹配 SSID 行（可能有中英文标签）
+        const m = /(?:SSID|SSID\s+\d+)\s*[:：]\s*(.+)/.exec(line)
         if (m) return m[1].trim()
       }
       return null

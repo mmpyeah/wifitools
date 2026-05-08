@@ -161,6 +161,12 @@ function isOpenNetwork(auth: string): boolean {
   return lower.includes('open') || lower.includes('开放') || lower.includes('nopass') || lower === 'none'
 }
 
+// 判断 SSID 是否与当前连接一致（忽略首尾空白）
+function isCurrentSsid(ssid: string): boolean {
+  if (!currentSsid.value || !ssid) return false
+  return currentSsid.value.trim() === ssid.trim()
+}
+
 function switchTab(tab: 'saved' | 'nearby' | 'status') {
   activeTab.value = tab
   keyword.value = ''
@@ -471,14 +477,14 @@ function signalClass(signal: number): string {
               <span class="signal-bars" :class="signalClass(item.signal)">{{ signalIcon(item.signal) }}</span>
               <span class="wifi-query__ssid-text">
                 {{ item.ssid }}
-                <span v-if="item.ssid === currentSsid" class="wifi-query__badge wifi-query__badge--connected">已连接</span>
+                <span v-if="isCurrentSsid(item.ssid)" class="wifi-query__badge wifi-query__badge--connected">已连接</span>
                 <span v-else-if="item.saved" class="wifi-query__badge wifi-query__badge--saved">已保存</span>
               </span>
             </div>
             <div class="wifi-query__nearby-meta">
               <span class="wifi-query__signal-pct">{{ item.signal }}%</span>
               <button
-                v-if="item.ssid !== currentSsid"
+                v-if="!isCurrentSsid(item.ssid)"
                 class="wifi-query__btn"
                 :class="{ 'wifi-query__btn--connecting': connectingSsid === item.ssid }"
                 @click="handleConnect(item)"
