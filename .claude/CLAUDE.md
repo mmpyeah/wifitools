@@ -5,7 +5,7 @@
 基于 **uTools** 平台的 WiFi 助手插件，使用 Vue 3 + Vite 构建。
 核心目标：在 uTools 中快速查询 WiFi 密码、展示 WiFi 二维码、管理已保存的 WiFi 信息。
 
-**项目路径：** `D:\WebstormProjects\wifitools`
+**项目路径：** `D:\webstorm_workspace\WiFi助手`
 
 ---
 
