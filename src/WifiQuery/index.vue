@@ -36,6 +36,8 @@ const copiedSsid = ref('')
 const savedLoading = ref(true)
 const savedError = ref('')
 const wifiList = ref<SavedWifi[]>([])
+const deletingSSID = ref('')    // 当前正在确认删除的 SSID
+const deleteError = ref('')     // 删除失败提示
 
 const filteredSaved = computed(() => {
   const kw = keyword.value.trim().toLowerCase()
@@ -80,6 +82,27 @@ function showQrcode(item: SavedWifi) {
     ssid: item.ssid,
     password: item.password || ''
   })
+}
+
+function confirmDelete(item: SavedWifi) {
+  deletingSSID.value = item.ssid
+  deleteError.value = ''
+}
+
+function cancelDelete() {
+  deletingSSID.value = ''
+  deleteError.value = ''
+}
+
+function doDelete(item: SavedWifi) {
+  try {
+    window.services.deleteWifiProfile(item.ssid)
+    wifiList.value = wifiList.value.filter(i => i.ssid !== item.ssid)
+    deletingSSID.value = ''
+    deleteError.value = ''
+  } catch (err: any) {
+    deleteError.value = err.message || '删除失败'
+  }
 }
 
 // ─── 周边热点 Tab ────────────────────────────────────────
@@ -261,6 +284,7 @@ function signalClass(signal: number): string {
                 @click="copyPassword(item)"
               >{{ copiedSsid === item.ssid ? '已复制' : '复制' }}</button>
               <button class="wifi-query__btn wifi-query__btn--ghost" @click="showQrcode(item)">二维码</button>
+              <button class="wifi-query__btn wifi-query__btn--danger" @click="confirmDelete(item)">删除</button>
             </div>
           </div>
           <div class="wifi-query__password">
@@ -269,6 +293,15 @@ function signalClass(signal: number): string {
               <span v-else class="wifi-query__mask">••••••••••</span>
             </template>
             <span v-else class="wifi-query__no-password">无密码 / 企业认证</span>
+          </div>
+          <!-- 删除确认条 -->
+          <div v-if="deletingSSID === item.ssid" class="wifi-query__delete-confirm">
+            <span class="wifi-query__delete-tip">确认删除「{{ item.ssid }}」的保存记录？</span>
+            <div class="wifi-query__delete-actions">
+              <button class="wifi-query__btn wifi-query__btn--danger" @click="doDelete(item)">确认删除</button>
+              <button class="wifi-query__btn wifi-query__btn--ghost" @click="cancelDelete">取消</button>
+            </div>
+            <div v-if="deleteError" class="wifi-query__delete-error">{{ deleteError }}</div>
           </div>
         </li>
       </ul>
@@ -598,8 +631,38 @@ function signalClass(signal: number): string {
   color: var(--blue);
   border: 1px solid var(--blue);
 }
-.wifi-query__btn--copied { background: #48bb78; }
+.wifi-query__btn--copied  { background: #48bb78; }
+.wifi-query__btn--danger  {
+  background: transparent;
+  color: #f56565;
+  border: 1px solid #f56565;
+}
+.wifi-query__btn--danger:hover { background: rgba(245,101,101,0.08); }
 .wifi-query__btn:active { opacity: 0.7; }
+
+/* 删除确认条 */
+.wifi-query__delete-confirm {
+  margin-top: 7px;
+  padding: 8px 12px;
+  background: rgba(245,101,101,0.07);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.wifi-query__delete-tip {
+  font-size: 12px;
+  color: #f56565;
+}
+.wifi-query__delete-actions {
+  display: flex;
+  gap: 6px;
+}
+.wifi-query__delete-error {
+  font-size: 11px;
+  color: #f56565;
+  opacity: 0.8;
+}
 
 /* 底部 */
 .wifi-query__footer {

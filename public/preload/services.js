@@ -121,6 +121,12 @@ window.services = {
     }
   },
 
+  // 删除已保存的 WiFi 配置文件，成功返回 true，失败抛出错误
+  deleteWifiProfile (ssid) {
+    execUTF8(`netsh wlan delete profile name="${ssid}"`)
+    return true
+  },
+
   // 扫描周边可用 WiFi 列表，按信号强度降序
   // 返回 [{ ssid, signal, band, auth, saved }]
   // 若系统未开启位置服务，抛出 { code: 'LOCATION_REQUIRED' }

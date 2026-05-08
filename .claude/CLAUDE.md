@@ -154,10 +154,10 @@ npm run build  # 构建生产包
 - [x] `wifi-query` — 查询系统已保存的 WiFi 密码
 - [x] `wifi-qrcode` — 生成 WiFi 二维码，供手机扫码连接
 - [x] `wifi-list` — 列出当前环境可用 WiFi 列表及信号强度（内嵌在 wifi-query 周边热点 Tab）
+- [x] `wifi-status` — 当前连接详情：SSID、IP、信号、频道、速率、网卡（内嵌在 wifi-query 网络状态 Tab）
 
 ### 待开发（优先）
-- [ ] `wifi-status` — 当前连接详情（SSID、IP、信号、频道、速率、网卡），新 Tab 或新页面
-- [ ] `wifi-forget` — 删除已保存的 WiFi，在已保存列表加删除按钮，改动最小
+- [x] `wifi-forget` — 删除已保存的 WiFi，已保存列表内各行加删除按钮 + 内联确认
 - [ ] `wifi-card` — WiFi 分享卡片，SSID + 密码 + 二维码合成图片，可打印/发送
 
 ### 待开发（后续）

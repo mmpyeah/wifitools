@@ -19,7 +19,7 @@ WiFi助手/
 │   ├── main.js                  # Vue 应用入口
 │   ├── main.css                 # 全局样式 + CSS 变量
 │   ├── App.vue                  # 根组件：路由调度 + 页面传参
-│   ├── WifiQuery/index.vue      # 首页：已保存密码 + 周边热点（双 Tab）
+│   ├── WifiQuery/index.vue      # 首页：已保存密码 + 周边热点 + 网络状态（三 Tab）
 │   ├── WifiQrcode/index.vue     # 二维码页
 │   ├── Hello/index.vue          # 模板示例（可删）
 │   ├── Read/index.vue           # 模板示例（可删）
@@ -55,7 +55,8 @@ WifiQuery   WifiQrcode   ...其他功能页
 (首页)      (二维码页)
    │
    ├── Tab: 已保存密码
-   └── Tab: 周边热点
+   ├── Tab: 周边热点
+   └── Tab: 网络状态
                    │
 ┌──────────────────▼──────────────────────────┐
 │           preload/services.js（系统层）       │
@@ -104,6 +105,7 @@ function navigateTo(name: string, params: Record<string, string> = {}) {
 | `listSavedWifi()` | 获取所有已保存 SSID 列表 |
 | `getWifiPassword(ssid)` | 获取指定 SSID 的密码，无则返回 null |
 | `getCurrentWifi()` | 获取当前连接的 SSID，未连接返回 null |
+| `getWifiStatus()` | 获取当前连接详情，返回 `{ ssid, signal, channel, rxRate, txRate, auth, adapter, adapterName, mac, ipv4, ipv6 }` 或 null |
 | `scanWifiNetworks(savedSsids)` | 扫描周边热点，返回按信号排序的列表 |
 
 **编码方案：**
@@ -120,7 +122,7 @@ function execUTF8(cmd) {
 
 | code | 触发词 | 入口组件 | 说明 |
 |------|--------|----------|------|
-| `wifi-query` | WiFi密码 / 查询WiFi | `WifiQuery` | 首页，双 Tab（已保存 + 周边热点） |
+| `wifi-query` | WiFi密码 / 查询WiFi | `WifiQuery` | 首页，三 Tab（已保存 + 周边热点 + 网络状态），已保存 Tab 支持删除 |
 | `wifi-qrcode` | WiFi二维码 | `WifiQrcode` | 从 wifi-query 跳转或独立触发 |
 | `wifi-list` | — | `WifiQuery` 周边热点 Tab | 内嵌在首页，无独立入口 |
 
@@ -132,8 +134,8 @@ function execUTF8(cmd) {
 
 | code | 说明 | 实现思路 |
 |------|------|----------|
-| `wifi-status` | 当前连接详情：SSID、IP、信号、频道、速率、网卡 | `netsh wlan show interfaces`，新页面或首页新 Tab |
-| `wifi-forget` | 删除已保存的 WiFi | 已保存列表各行加删除按钮，`netsh wlan delete profile name="xxx"` |
+| ~~`wifi-status`~~ | ✅ 已完成，内嵌在 WifiQuery 第三 Tab | — |
+| `wifi-forget` | 删除已保存的 WiFi | 已保存列表各行加删除按钮，内联确认条，`netsh wlan delete profile name="xxx"` |
 | `wifi-card` | WiFi 分享卡片 | SSID+密码+二维码 canvas 合成图片，复用 `writeImageFile` |
 
 ### 后续
@@ -143,12 +145,13 @@ function execUTF8(cmd) {
 | `wifi-diagnose` | 网络诊断一键修复 | ping 网关/DNS/外网，分层判断断网原因，提供修复命令按钮 |
 | `wifi-dns` | DNS 快速切换 | 一键切换自动/114/阿里/Google/Cloudflare DNS |
 
-### WifiQuery 首页双 Tab
+### WifiQuery 首页三 Tab
 
 ```
 Tab 1：已保存
   - onMounted 同步加载全部 SSID + 密码
   - 搜索过滤 / 显示隐藏 / 复制密码 / 跳转二维码
+  - 删除：点「删除」按钮内联展开确认条，确认后调用 `deleteWifiProfile(ssid)` 并从列表移除
 
 Tab 2：周边热点
   - 切换 Tab 时懒加载（setTimeout 50ms 让 loading 先渲染）
@@ -156,6 +159,13 @@ Tab 2：周边热点
   - 标记：已连接（绿）/ 已保存（蓝）
   - 位置权限不足时展示引导 UI + 一键打开系统设置
   - 底部「刷新」按钮支持重新扫描
+
+Tab 3：网络状态
+  - 切换时调用 getWifiStatus()，setTimeout 50ms 让 loading 先渲染
+  - 展示：SSID + 信号格数、IPv4（带复制按钮）、IPv6、频道、速率、加密、MAC、网卡型号
+  - IP 通过 adapterName 精确定位 ipconfig 对应适配器块（避免多 WLAN 适配器误匹配）
+  - 未连接时展示空状态提示
+  - 底部「刷新」按钮
 ```
 
 ### WifiQrcode 二维码页
