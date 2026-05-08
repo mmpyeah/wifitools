@@ -787,6 +787,7 @@ function signalClass(signal: number): string {
   font-weight: 500;
   overflow: hidden;
   min-width: 0;
+  flex: 1;
 }
 .wifi-query__ssid-text {
   overflow: hidden;
@@ -809,6 +810,7 @@ function signalClass(signal: number): string {
   flex-shrink: 0;
   font-size: 13px;
   color: var(--blue);
+  line-height: 0;
 }
 .wifi-query__wifi-svg {
   width: 15px;
@@ -835,6 +837,7 @@ function signalClass(signal: number): string {
   gap: 6px;
   flex-shrink: 0;
   align-items: center;
+  margin-left: auto;
 }
 
 .wifi-query__password {
@@ -869,6 +872,8 @@ function signalClass(signal: number): string {
 }
 .wifi-query__toggle-visibility:hover { color: var(--text-secondary); }
 .wifi-query__eye-icon { width: 14px; height: 14px; }
+.wifi-query__wifi-svg { width: 15px; height: 15px; display: block; }
+.wifi-query__search-svg { width: 14px; height: 14px; display: block; }
 
 .wifi-query__btn {
   padding: 3px 11px;
@@ -940,7 +945,7 @@ function signalClass(signal: number): string {
 }
 .wifi-query__refresh:active { opacity: 0.6; }
 
-.wifi-query__nearby-meta { flex-shrink: 0; display: flex; align-items: center; gap: 6px; }
+.wifi-query__nearby-meta { flex-shrink: 0; display: flex; align-items: center; gap: 6px; margin-left: auto; }
 .wifi-query__signal-pct { font-size: 11px; font-variant-numeric: tabular-nums; color: var(--text-tertiary); min-width: 30px; text-align: right; }
 .wifi-query__nearby-info { margin-top: 4px; padding-left: 36px; font-size: 11px; color: var(--text-tertiary); }
 
@@ -949,8 +954,8 @@ function signalClass(signal: number): string {
   gap: 2px;
   align-items: flex-end;
   flex-shrink: 0;
+  width: 18px;
   height: 16px;
-  vertical-align: middle;
 }
 .signal-bars span {
   display: block;
