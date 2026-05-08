@@ -85,6 +85,7 @@ function showQrcode(item: SavedWifi) {
 // ─── 周边热点 Tab ────────────────────────────────────────
 const nearbyLoading = ref(false)
 const nearbyError = ref('')
+const nearbyLocationRequired = ref(false)
 const nearbyList = ref<NearbyWifi[]>([])
 const nearbyLoaded = ref(false) // 是否已经加载过一次
 const currentSsid = ref<string | null>(null)
@@ -114,8 +115,13 @@ function scanNearby() {
       const savedSsids = wifiList.value.map(i => i.ssid)
       nearbyList.value = window.services.scanWifiNetworks(savedSsids)
       nearbyLoaded.value = true
+      nearbyLocationRequired.value = false
     } catch (err: any) {
-      nearbyError.value = err.message || '扫描失败'
+      if (err.code === 'LOCATION_REQUIRED') {
+        nearbyLocationRequired.value = true
+      } else {
+        nearbyError.value = err.message || '扫描失败'
+      }
     } finally {
       nearbyLoading.value = false
     }
@@ -230,6 +236,15 @@ function signalClass(signal: number): string {
     <!-- ══════════ 周边热点 Tab ══════════ -->
     <template v-if="activeTab === 'nearby'">
       <div v-if="nearbyLoading" class="wifi-query__status">正在扫描周边热点...</div>
+      <div v-else-if="nearbyLocationRequired" class="wifi-query__location-tip">
+        <div class="wifi-query__location-icon">📍</div>
+        <div class="wifi-query__location-title">需要位置服务权限</div>
+        <div class="wifi-query__location-desc">Windows 11 扫描周边 WiFi 需要开启位置服务</div>
+        <button class="wifi-query__location-btn" @click="() => { window.utools.shellOpenExternal('ms-settings:privacy-location') }">
+          打开位置设置
+        </button>
+        <button class="wifi-query__refresh" style="margin-top:8px" @click="scanNearby">已开启，重新扫描</button>
+      </div>
       <div v-else-if="nearbyError" class="wifi-query__error">{{ nearbyError }}</div>
       <div v-else-if="!nearbyLoaded" class="wifi-query__status">准备扫描</div>
       <div v-else-if="filteredNearby.length === 0" class="wifi-query__status">
@@ -502,6 +517,33 @@ function signalClass(signal: number): string {
   transition: opacity 0.15s;
 }
 .wifi-query__refresh:active { opacity: 0.6; }
+
+/* 位置权限引导 */
+.wifi-query__location-tip {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  text-align: center;
+}
+.wifi-query__location-icon { font-size: 32px; }
+.wifi-query__location-title { font-weight: 600; font-size: 14px; }
+.wifi-query__location-desc { font-size: 12px; opacity: 0.5; max-width: 240px; line-height: 1.6; }
+.wifi-query__location-btn {
+  margin-top: 4px;
+  padding: 6px 20px;
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.wifi-query__location-btn:active { opacity: 0.7; }
 
 @media (prefers-color-scheme: dark) {
   .wifi-query__item:hover { background: rgba(255, 255, 255, 0.05); }

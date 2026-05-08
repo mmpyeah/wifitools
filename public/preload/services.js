@@ -4,7 +4,7 @@ const { execSync } = require('node:child_process')
 
 // 执行命令，强制 UTF-8 输出（chcp 65001）
 function execUTF8(cmd) {
-  return execSync(`chcp 65001 >nul && ${cmd}`, { encoding: 'utf8' })
+  return execSync(`chcp 65001 >nul && ${cmd}`, { encoding: 'utf8', shell: 'cmd.exe' })
 }
 
 // 通过 window 对象向渲染进程注入 nodejs 能力
@@ -74,8 +74,15 @@ window.services = {
 
   // 扫描周边可用 WiFi 列表，按信号强度降序
   // 返回 [{ ssid, signal, band, auth, saved }]
+  // 若系统未开启位置服务，抛出 { code: 'LOCATION_REQUIRED' }
   scanWifiNetworks (savedSsids) {
     const text = execUTF8('netsh wlan show networks mode=bssid')
+    // 检测位置权限错误
+    if (text.includes('ms-settings:privacy-location') || text.includes('位置权限') || text.includes('拒绝访问')) {
+      const err = new Error('需要开启位置服务')
+      err.code = 'LOCATION_REQUIRED'
+      throw err
+    }
     const results = []
     const savedSet = new Set((savedSsids || []).map(s => s.toLowerCase()))
 
