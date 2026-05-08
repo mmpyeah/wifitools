@@ -53,8 +53,7 @@ function drawCard() {
   const canvas = cardCanvas.value
   if (!canvas || !ssid.value) return
 
-  // ── DPR 高清处理：物理尺寸 × devicePixelRatio ──
-  const DPR = window.devicePixelRatio || 2
+  const DPR = Math.min(window.devicePixelRatio || 2, 3)
   canvas.width  = CARD_W * DPR
   canvas.height = CARD_H * DPR
   canvas.style.width  = CARD_W + 'px'
@@ -64,137 +63,99 @@ function drawCard() {
   ctx.scale(DPR, DPR)
   ctx.clearRect(0, 0, CARD_W, CARD_H)
 
-  // ── 白卡主体 ──
+  const FONT = '-apple-system,"PingFang SC","Microsoft YaHei",sans-serif'
+  const MONO = '"SF Mono","Fira Code",Consolas,monospace'
+
+  // ── 白卡底色 ──
   roundRect(ctx, 0, 0, CARD_W, CARD_H, RADIUS)
   ctx.fillStyle = '#ffffff'
   ctx.fill()
 
-  // ── 顶部渐变蓝条 ──
+  // ── 左侧背景块（亮蓝色调） ──
+  const LEFT_W = 220
   ctx.save()
-  const grad = ctx.createLinearGradient(0, 0, CARD_W, 0)
-  grad.addColorStop(0, '#2563eb')
-  grad.addColorStop(1, '#60a5fa')
-  roundRect(ctx, 0, 0, CARD_W, 7, { tl: RADIUS, tr: RADIUS, bl: 0, br: 0 })
-  ctx.fillStyle = grad
+  roundRect(ctx, 0, 0, LEFT_W, CARD_H, { tl: RADIUS, tr: 0, bl: RADIUS, br: 0 })
+  const lgBg = ctx.createLinearGradient(0, 0, LEFT_W, CARD_H)
+  lgBg.addColorStop(0, '#3b82f6')
+  lgBg.addColorStop(1, '#60a5fa')
+  ctx.fillStyle = lgBg
   ctx.fill()
   ctx.restore()
 
-  // ── 布局常量 ──
-  const QR_AREA  = QR_SIZE + PAD * 2        // 右侧二维码区域总宽
-  const textMaxX = CARD_W - QR_AREA         // 文字区右边界
-  const FONT     = '-apple-system, "PingFang SC", "Microsoft YaHei", sans-serif'
-  const MONO     = '"SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace'
-
-  // ── 标题行 ──
-  const ICON_BOX = 26                        // 图标容器边长
-  const TITLE_Y  = 42                        // 标题基线 Y
-
-  // 图标容器（圆角蓝底）
+  // 左侧斜纹装饰
   ctx.save()
-  roundRect(ctx, PAD, TITLE_Y - 18, ICON_BOX, ICON_BOX, 7)
-  ctx.fillStyle = '#dbeafe'
-  ctx.fill()
-  ctx.restore()
-
-  // WiFi 弧线图标
-  ctx.save()
-  ctx.strokeStyle = '#2563eb'
-  ctx.lineCap = 'round'
-  const cx = PAD + ICON_BOX / 2
-  const cy = TITLE_Y - 18 + ICON_BOX / 2 + 1
-  const wifiArcs: [number, number, number][] = [
-    [4.5,  195, 345],
-    [7.5,  210, 330],
-    [10.5, 220, 320],
-  ]
-  for (const [r, startDeg, endDeg] of wifiArcs) {
-    ctx.lineWidth = r < 6 ? 1.5 : 1.8
+  ctx.beginPath()
+  roundRect(ctx, 0, 0, LEFT_W, CARD_H, { tl: RADIUS, tr: 0, bl: RADIUS, br: 0 })
+  ctx.clip()
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)'
+  ctx.lineWidth = 14
+  for (let x = -CARD_H; x < LEFT_W + CARD_H; x += 32) {
     ctx.beginPath()
-    ctx.arc(cx, cy, r, (startDeg * Math.PI) / 180, (endDeg * Math.PI) / 180)
+    ctx.moveTo(x, 0)
+    ctx.lineTo(x + CARD_H, CARD_H)
     ctx.stroke()
   }
-  ctx.fillStyle = '#2563eb'
-  ctx.beginPath()
-  ctx.arc(cx, cy + 2, 1.8, 0, Math.PI * 2)
-  ctx.fill()
   ctx.restore()
 
-  // 标题文字
-  ctx.font = `600 15px ${FONT}`
-  ctx.fillStyle = '#0f172a'
-  ctx.fillText('WiFi 连接信息', PAD + ICON_BOX + 9, TITLE_Y)
+  // 左侧内容
+  const LX = 28
+  ctx.font = `700 26px ${FONT}`
+  ctx.fillStyle = '#ffffff'
+  ctx.fillText('Wi-Fi', LX, 68)
 
-  // 分隔线
-  let lineY = TITLE_Y + 12
-  ctx.strokeStyle = '#e2e8f0'
+  ctx.font = `400 11px ${FONT}`
+  ctx.fillStyle = 'rgba(255,255,255,0.75)'
+  ctx.fillText('连接信息', LX, 86)
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.22)'
   ctx.lineWidth = 0.75
   ctx.beginPath()
-  ctx.moveTo(PAD, lineY)
-  ctx.lineTo(textMaxX - 8, lineY)
+  ctx.moveTo(LX, 102)
+  ctx.lineTo(LEFT_W - LX, 102)
   ctx.stroke()
 
-  // ── 字段列表 ──
-  // 列对齐：label 列固定宽 40px，value 从固定 X 开始
-  const LABEL_X   = PAD
-  const LABEL_W   = 38
-  const VALUE_X   = PAD + LABEL_W + 10
-  const PILL_H    = 19
-  const PILL_R    = 4
-  const ROW_GAP   = 32
-  let   rowY      = lineY + 26
+  // 名称
+  ctx.font = `400 10px ${FONT}`
+  ctx.fillStyle = 'rgba(255,255,255,0.65)'
+  ctx.fillText('网络名称', LX, 126)
+  ctx.font = `600 13px ${FONT}`
+  ctx.fillStyle = '#ffffff'
+  ctx.fillText(truncateText(ctx, ssid.value, LEFT_W - LX * 2), LX, 144)
 
-  const fields = [
-    { label: '名称', value: ssid.value,                                         mono: false },
-    { label: '密码', value: password.value || '无需密码',                       mono: true  },
-    { label: '加密', value: password.value ? 'WPA / WPA2 / WPA3' : '开放网络', mono: false },
-  ]
-
-  for (const field of fields) {
-    // label pill
-    ctx.save()
-    roundRect(ctx, LABEL_X, rowY - PILL_H + 4, LABEL_W, PILL_H, PILL_R)
-    ctx.fillStyle = '#f1f5f9'
-    ctx.fill()
-    ctx.restore()
-
-    ctx.font = `11px ${FONT}`
-    ctx.fillStyle = '#64748b'
-    ctx.textAlign = 'center'
-    ctx.fillText(field.label, LABEL_X + LABEL_W / 2, rowY)
-    ctx.textAlign = 'left'
-
-    // value
-    ctx.font = field.mono ? `500 13px ${MONO}` : `500 13.5px ${FONT}`
-    ctx.fillStyle = '#1e293b'
-    const maxW   = textMaxX - VALUE_X - 8
-    const valStr = truncateText(ctx, field.value, maxW)
-    ctx.fillText(valStr, VALUE_X, rowY)
-
-    rowY += ROW_GAP
-  }
+  // 密码
+  ctx.font = `400 10px ${FONT}`
+  ctx.fillStyle = 'rgba(255,255,255,0.65)'
+  ctx.fillText('连接密码', LX, 174)
+  ctx.font = password.value ? `600 13px ${MONO}` : `400 13px ${FONT}`
+  ctx.fillStyle = '#ffffff'
+  ctx.fillText(truncateText(ctx, password.value || '无需密码', LEFT_W - LX * 2), LX, 192)
 
   // 底部提示
-  ctx.font = `11px ${FONT}`
-  ctx.fillStyle = '#94a3b8'
-  ctx.fillText('扫描右侧二维码即可连接', PAD, CARD_H - 16)
+  ctx.font = `400 10px ${FONT}`
+  ctx.fillStyle = 'rgba(255,255,255,0.45)'
+  ctx.fillText('扫描右侧二维码快速连接', LX, CARD_H - 20)
 
-  // ── 右侧二维码 ──
+  // ── 右侧二维码：撑满右侧区域，留小内边距 ──
   const qrCanvas = document.querySelector('.wifi-card__qr canvas') as HTMLCanvasElement
   if (qrCanvas) {
-    const qrX = CARD_W - QR_SIZE - PAD
-    const qrY = (CARD_H - QR_SIZE) / 2 + 4
+    const RIGHT_W   = CARD_W - LEFT_W
+    const INSET     = 18                              // 四周内边距
+    const QR_DRAW   = Math.min(RIGHT_W, CARD_H) - INSET * 2
+    const QR_X      = LEFT_W + (RIGHT_W - QR_DRAW) / 2
+    const QR_Y      = (CARD_H - QR_DRAW) / 2
 
-    // 背景框
+    // 圆角白底衬板
+    const PAD_QR = 8
     ctx.save()
-    roundRect(ctx, qrX - 10, qrY - 10, QR_SIZE + 20, QR_SIZE + 20, 10)
-    ctx.fillStyle = '#f8fafc'
+    roundRect(ctx, QR_X - PAD_QR, QR_Y - PAD_QR, QR_DRAW + PAD_QR * 2, QR_DRAW + PAD_QR * 2, 10)
+    ctx.fillStyle = '#ffffff'
     ctx.fill()
     ctx.strokeStyle = '#e2e8f0'
     ctx.lineWidth = 0.75
     ctx.stroke()
     ctx.restore()
 
-    ctx.drawImage(qrCanvas, qrX, qrY, QR_SIZE, QR_SIZE)
+    ctx.drawImage(qrCanvas, QR_X, QR_Y, QR_DRAW, QR_DRAW)
   }
 }
 
