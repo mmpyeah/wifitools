@@ -117,26 +117,27 @@ window.services = {
     const results = []
     const savedSet = new Set((savedSsids || []).map(s => s.toLowerCase()))
 
-    // 按 SSID 块分割：每个 "SSID N :" 开头算一个网络块
-    const blocks = text.split(/(?=SSID \d+\s*:)/i)
+    // 按 "SSID N :" 切块，每块对应一个网络
+    const blocks = text.split(/(?=^SSID \d+\s*:)/im)
 
     for (const block of blocks) {
-      // 提取 SSID 名称（兼容中英文，跳过空 SSID）
-      const ssidMatch = /^SSID \d+\s*:\s*(.+)$/im.exec(block)
+      // 提取 SSID 名称；值在冒号后，可能为空（隐藏 SSID）
+      const ssidMatch = /^SSID \d+\s*:\s*(.*)$/im.exec(block)
       if (!ssidMatch) continue
       const ssid = ssidMatch[1].trim()
-      if (!ssid) continue
+      if (!ssid) continue  // 隐藏 SSID，整块跳过
 
       // 同一 SSID 可能有多个 BSSID，取最大信号值
+      // 部分 BSSID 块可能没有信号字段（如隐藏 AP），过滤后取最大值
       const signalMatches = [...block.matchAll(/(?:信号|Signal)\s*:\s*(\d+)%/gi)]
-      if (signalMatches.length === 0) continue
-      const signal = Math.max(...signalMatches.map(m => parseInt(m[1])))
+      const validSignals = signalMatches.map(m => parseInt(m[1])).filter(n => !isNaN(n))
+      const signal = validSignals.length > 0 ? Math.max(...validSignals) : 0
 
-      // 波段：取第一个 BSSID 的波段
+      // 波段：取第一个匹配（中英文）
       const bandMatch = /(?:波段|Band)\s*:\s*(.+)/i.exec(block)
       const band = bandMatch ? bandMatch[1].trim() : ''
 
-      // 加密认证
+      // 加密认证（中英文）
       const authMatch = /(?:身份验证|Authentication)\s*:\s*(.+)/i.exec(block)
       const auth = authMatch ? authMatch[1].trim() : ''
 

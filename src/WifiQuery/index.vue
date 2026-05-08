@@ -131,6 +131,10 @@ function scanNearby() {
   }, 50)
 }
 
+function openWifiSettings() {
+  window.utools.shellOpenExternal('ms-settings:network-wifi')
+}
+
 function openLocationSettings() {
   window.utools.shellOpenExternal('ms-settings:privacy-location')
 }
@@ -239,8 +243,9 @@ function signalClass(signal: number): string {
       <div v-else-if="nearbyWifiOff" class="wifi-query__location-tip">
         <div class="wifi-query__location-icon">📵</div>
         <div class="wifi-query__location-title">WiFi 未开启</div>
-        <div class="wifi-query__location-desc">请先开启无线网卡或 WiFi 开关，再来扫描周边热点</div>
-        <button class="wifi-query__refresh" style="margin-top:12px" @click="scanNearby">重新扫描</button>
+        <div class="wifi-query__location-desc">请先开启 WiFi，再来扫描周边热点</div>
+        <button class="wifi-query__location-btn" @click="openWifiSettings">打开 WiFi 设置</button>
+        <button class="wifi-query__refresh" style="margin-top:8px" @click="scanNearby">已开启，重新扫描</button>
       </div>
 
       <!-- 需要位置权限 -->
